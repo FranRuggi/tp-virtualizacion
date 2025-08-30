@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# 1. Validar que se pasó un directorio
+if [ -z "$1" ]; then
+  echo "Uso: $0 <DirectorioArchivos>"
+  exit 1
+fi
+
+DIR="$1"
+
+# 2. Recorrer todos los archivos .txt
+for archivo in "$DIR"/*.txt; do
+    awk -F"|" '
+    {
+        canal = $3
+        tiempo[canal] += $4
+        satisfaccion[canal] += $5
+        cuenta[canal]++
+    }
+    END {
+        for (c in cuenta) {
+            printf "%s: tiempo_promedio=%.2f, satisfaccion_promedio=%.2f\n", \
+                   c, tiempo[c]/cuenta[c], satisfaccion[c]/cuenta[c]
+        }
+    }
+    ' "$archivo"
+done
