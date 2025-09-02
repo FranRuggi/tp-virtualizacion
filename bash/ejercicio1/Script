@@ -1,8 +1,9 @@
 #!/bin/bash
 
+#Creo que acá debería validar que el directorio sea ejercicio1
 # 1. Validar que se pasó un directorio
 if [ -z "$1" ]; then
-  echo "Uso: $0 <DirectorioArchivos>"
+  echo "No pasaste directorio: $0"
   exit 1
 fi
 
@@ -10,6 +11,9 @@ DIR="$1"
 
 # 2. Recorrer todos los archivos .txt
 for archivo in "$DIR"/*.txt; do
+    # Sacar solo el nombre del archivo (sin ruta)
+    nombre_archivo=$(basename "$archivo")
+
     awk -F"|" '
     {
         canal = $3
@@ -19,9 +23,19 @@ for archivo in "$DIR"/*.txt; do
     }
     END {
         for (c in cuenta) {
-            printf "%s: tiempo_promedio=%.2f, satisfaccion_promedio=%.2f\n", \
-                   c, tiempo[c]/cuenta[c], satisfaccion[c]/cuenta[c]
+            # salida en formato canal|tiempoPromedio|satisfaccionPromedio
+            printf "%s|%.2f|%.2f\n", c, tiempo[c]/cuenta[c], satisfaccion[c]/cuenta[c]
         }
     }
-    ' "$archivo"
+    ' "$archivo" |
+    jq -R -s --arg archivo "$nombre_archivo" '
+        split("\n")[:-1] |
+        map(split("|")) |
+        map({
+            canal: .[0],
+            tiempo_promedio: (.[1]|tonumber),
+            satisfaccion_promedio: (.[2]|tonumber)
+        }) |
+        {archivo: $archivo, resultados: .}
+    '
 done
