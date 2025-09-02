@@ -8,7 +8,7 @@ if [ -z "$1" ]; then
 fi
 
 DIR="$1"
-
+#Este es un comentario para zois
 # 2. Recorrer todos los archivos .txt
 for archivo in "$DIR"/*.txt; do
     # Sacar solo el nombre del archivo (sin ruta)
