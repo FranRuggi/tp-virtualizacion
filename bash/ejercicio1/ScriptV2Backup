@@ -1,6 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-options=$(getopt -o d:a:ph --l help,directorio:,archivo:,pantalla -- "$@" 2> /dev/null)
+options=$(getopt -o d:a:ph -l help,directorio:,archivo:,pantalla -- "$@" 2> /dev/null)
+
+echo "$?"
 
 
 eval set -- "$options"
@@ -8,14 +10,16 @@ eval set -- "$options"
 while true; do
   case "$1" in
     -d|--directorio)
-      DIRECTORIO="$2"; shift 2 ;;
+      DIR="$2";
+      shift 2 ;;
     -a|--archivo)
-      ARCHIVO="$2"; shift 2 ;;
+      ARCHIVO="$2";
+      shift 2 
+      ;;
     -p|--pantalla)
       PANTALLA=1; shift ;;
     -h|--help)
-      echo "Uso: $0 -d <dir> -a <archivo> | -p"
-      exit 0 ;;
+      AYUDA=1; shift ;;
     --)
       shift; break ;;
     *)
@@ -23,17 +27,10 @@ while true; do
   esac
 done
 
-
-# 1. Validar que se pasó un directorio
-if [ -z "$1" ]; then
-  echo "Uso: $0 <DirectorioArchivos>"
-  exit 1
-fi
-
-DIR="$1"
+echo $DIR $ARCHIVO $PANTALLA $AYUDA
 
 # 2. Recorrer todos los archivos .txt
-for archivo in "$DIR"/*.txt; do
+for arch in "$DIR"/*.txt; do
     awk -F"|" '
     {
         canal = $3
