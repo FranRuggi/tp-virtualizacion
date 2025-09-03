@@ -1,19 +1,32 @@
 #!/bin/bash
 
+DIRECTORIO=""
+ARCHIVO=""
+AYUDA=0
+PANTALLA=0
+
+abspath() {
+  local p="$1"
+  case "$p" in
+    /*|~*) printf '%s\n' "$p" ;;
+    *)     printf '%s\n' "$PWD/$p" ;;
+  esac
+}
+
+# ------------------ Carga de opciones ------------------
 options=$(getopt -o d:a:ph -l help,directorio:,archivo:,pantalla -- "$@" 2> /dev/null)
 
-echo "$?"
-
-
 eval set -- "$options"
+
+# Asignamos valores a las variables 
 
 while true; do
   case "$1" in
     -d|--directorio)
-      DIR="$2";
+      DIR="$(abspath "$2")";
       shift 2 ;;
     -a|--archivo)
-      ARCHIVO="$2";
+      ARCHIVO="$(abspath "$2")";
       shift 2 
       ;;
     -p|--pantalla)
@@ -24,25 +37,66 @@ while true; do
       shift; break ;;
     *)
       break ;;
-  esac
+  esac  
 done
+
+
+# ------------------ Validaciones ------------------
+# Mostramos la Ayuda
+
+if [[ "$AYUDA" -eq 1 ]]; then
+  echo "Este programa tiene por objetivo analizar los resultados de encuestas de satisfaccion de clientes"
+  echo "de un servicio de atención al cliente. Relevará los datos en el directorio enviado e imprimira (en un archivo o por pantalla)"
+  echo "los promedios de tiempo de respuesta y satisfaccion del cleinte por fecha y por canal"
+  echo ""
+  echo "La llamada al script sera de la siguiente manera: $0 -d | --directorio <directorio> [-a | -archivo <archivo> | -p]"
+  echo "  -d  directorio de entrada (obligatorio)"
+  echo "  -a  archivo de salida (excluyente con -p)"
+  echo "  -p  mostrar salida por pantalla (excluyente con -a)"
+  echo "  -h  mostrar esta ayuda"
+  exit 0
+fi
+
+# Verificamos el directorio, que hayan ingresado y que exista
+if [[ -z "$DIR" || ! -d "$DIR" ]]; then
+  echo "Error: Falta el directorio o no existe. "
+  exit 1
+fi
+
+# Exclusión -a y -p
+if [ -n "$ARCHIVO" ] && [ "$PANTALLA" -eq 1 ]; then
+  echo "Error: no se puede usar -a y -p juntos" >&2
+  exit 1
+fi
+
+# Si no dieron ni -a ni -p → pedimos archivo
+if [ -z "$ARCHIVO" ] && [ "$PANTALLA" -eq 0 ]; then
+  echo "No especificaste salida (-a o -p)."
+  read -p "Ingrese ruta del archivo de salida: " ARCHIVO
+  if [ -e "$ARCHIVO" ]; then
+    echo "Error: el archivo $ARCHIVO ya existe" >&2
+    exit 1
+  fi
+fi
+
+# Si dieron -a, verificamos que NO exista ya ese archivo
+if [ -n "$ARCHIVO" ]; then
+  if [ -e "$ARCHIVO" ]; then
+    echo "Error: el archivo $ARCHIVO ya existe" >&2
+    exit 1
+  fi
+fi
+
+DEST_DIR=$(dirname -- "$ARCHIVO")
+if [ ! -d "$DEST_DIR" ]; then
+  echo "Error: el directorio destino '$DEST_DIR' no existe." >&2
+  exit 1
+fi
+
+if [ ! -w "$DEST_DIR" ]; then
+  echo "Error: no hay permisos de escritura en '$DEST_DIR'." >&2
+  exit 1
+fi
+
 
 echo $DIR $ARCHIVO $PANTALLA $AYUDA
-
-# 2. Recorrer todos los archivos .txt
-for arch in "$DIR"/*.txt; do
-    awk -F"|" '
-    {
-        canal = $3
-        tiempo[canal] += $4
-        satisfaccion[canal] += $5
-        cuenta[canal]++
-    }
-    END {
-        for (c in cuenta) {
-            printf "%s: tiempo_promedio=%.2f, satisfaccion_promedio=%.2f\n", \
-                   c, tiempo[c]/cuenta[c], satisfaccion[c]/cuenta[c]
-        }
-    }
-    ' "$archivo"
-done
