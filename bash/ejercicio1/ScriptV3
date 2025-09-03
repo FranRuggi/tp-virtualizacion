@@ -138,10 +138,5 @@ if [ "$PANTALLA" -eq 1 ]; then
   generar_json
 else
   generar_json > "$ARCHIVO"
-  echo "OK: JSON generado en $ARCHIVO"
+  echo "JSON generado en $ARCHIVO"
 fi
-
-echo "Directorio" $DIR 
-echo "Archivo" $ARCHIVO 
-echo "Pantalla:"$PANTALLA
-echo "Ayuda:"$AYUDA
