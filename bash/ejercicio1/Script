@@ -26,7 +26,10 @@ END {
         split(k, arr, "|");
         fecha = arr[1];
         canal = arr[2];
-        printf "%s|%s|%.2f|%.2f\n", fecha, canal, tiempo[k]/cuenta[k], satisfaccion[k]/cuenta[k];
+        if()
+            printf "%s|%s|%.2f|%.2f\n", fecha, canal, tiempo[k]/cuenta[k], satisfaccion[k]/cuenta[k];
+        else 
+            printf
     }
 }' "$DIR"/*.txt |
 jq -R -s '

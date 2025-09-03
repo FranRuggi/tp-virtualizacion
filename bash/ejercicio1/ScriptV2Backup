@@ -1,34 +1,48 @@
 #!/bin/bash
 
-DIRECTORIO=""
+DIR=""
 ARCHIVO=""
 AYUDA=0
 PANTALLA=0
 
-abspath() {
-  local p="$1"
-  case "$p" in
-    /*|~*) printf '%s\n' "$p" ;;
-    *)     printf '%s\n' "$PWD/$p" ;;
+# --- Funciones simples ---
+
+abspath_dir() {
+  # Resuelve .. de un DIRECTORIO existente
+  local d="$1"
+  case "$d" in
+    /*|~*) printf '%s\n' "$d" ;;
+    *)     ( cd "$d" 2>/dev/null && pwd ) || return 1 ;;
   esac
 }
+
+abspath_file() {
+  # Convierte RUTA DE ARCHIVO (que puede no existir) a absoluta
+  # resolviendo el directorio padre
+  local f="$1"
+  local dir base
+  dir=$(dirname -- "$f")
+  base=$(basename -- "$f")
+  dir=$(abspath_dir "$dir") || return 1
+  printf '%s/%s\n' "$dir" "$base"
+}
+
 
 # ------------------ Carga de opciones ------------------
 options=$(getopt -o d:a:ph -l help,directorio:,archivo:,pantalla -- "$@" 2> /dev/null)
 
 eval set -- "$options"
 
-# Asignamos valores a las variables 
+# ------------------ Asignamos valores a las variables ------------------
 
 while true; do
   case "$1" in
     -d|--directorio)
-      DIR="$(abspath "$2")";
+      DIR="$(abspath_dir "$2")" || { echo "Error: directorio inválido"; exit 1; }
       shift 2 ;;
     -a|--archivo)
-      ARCHIVO="$(abspath "$2")";
-      shift 2 
-      ;;
+      ARCHIVO="$(abspath_file "$2")" || { echo "Error: ruta de archivo inválida"; exit 1; }
+      shift 2 ;;
     -p|--pantalla)
       PANTALLA=1; shift ;;
     -h|--help)
@@ -57,9 +71,9 @@ if [[ "$AYUDA" -eq 1 ]]; then
   exit 0
 fi
 
-# Verificamos el directorio, que hayan ingresado y que exista
-if [[ -z "$DIR" || ! -d "$DIR" ]]; then
-  echo "Error: Falta el directorio o no existe. "
+# Directorio obligatorio y existente
+if [ -z "$DIR" ] || [ ! -d "$DIR" ]; then
+  echo "Error: Falta el directorio o no existe."
   exit 1
 fi
 
@@ -71,32 +85,27 @@ fi
 
 # Si no dieron ni -a ni -p → pedimos archivo
 if [ -z "$ARCHIVO" ] && [ "$PANTALLA" -eq 0 ]; then
-  echo "No especificaste salida (-a o -p)."
   read -p "Ingrese ruta del archivo de salida: " ARCHIVO
-  if [ -e "$ARCHIVO" ]; then
-    echo "Error: el archivo $ARCHIVO ya existe" >&2
-    exit 1
-  fi
+  ARCHIVO="$(abspath_file "$ARCHIVO")" || { echo "Error: ruta inválida"; exit 1; }
 fi
 
-# Si dieron -a, verificamos que NO exista ya ese archivo
+# Validaciones de archivo SOLO si hay archivo
 if [ -n "$ARCHIVO" ]; then
   if [ -e "$ARCHIVO" ]; then
     echo "Error: el archivo $ARCHIVO ya existe" >&2
     exit 1
   fi
+  DEST_DIR=$(dirname -- "$ARCHIVO")
+  if [ ! -d "$DEST_DIR" ]; then
+    echo "Error: el directorio destino '$DEST_DIR' no existe." >&2
+    exit 1
+  fi
+  if [ ! -w "$DEST_DIR" ]; then
+    echo "Error: no hay permisos de escritura en '$DEST_DIR'." >&2
+    exit 1
+  fi
 fi
 
-DEST_DIR=$(dirname -- "$ARCHIVO")
-if [ ! -d "$DEST_DIR" ]; then
-  echo "Error: el directorio destino '$DEST_DIR' no existe." >&2
-  exit 1
-fi
-
-if [ ! -w "$DEST_DIR" ]; then
-  echo "Error: no hay permisos de escritura en '$DEST_DIR'." >&2
-  exit 1
-fi
 
 
 echo $DIR $ARCHIVO $PANTALLA $AYUDA
