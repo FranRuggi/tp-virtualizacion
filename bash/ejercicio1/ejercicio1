@@ -8,7 +8,7 @@ AYUDA=0
 
 # --- Funciones simples ---
 
-abspath_dir() {
+function abspath_dir() {
   # Resuelve .. de un DIRECTORIO existente
   local d="$1"
   case "$d" in
@@ -17,7 +17,7 @@ abspath_dir() {
   esac
 }
 
-abspath_file() {
+function abspath_file() {
   # Convierte RUTA DE ARCHIVO (que puede no existir) a absoluta
   # resolviendo el directorio padre
   local f="$1"
@@ -27,10 +27,27 @@ abspath_file() {
   dir=$(abspath_dir "$dir") || return 1
   printf '%s/%s\n' "$dir" "$base"
 }
+function ayuda () {
+  echo ""
+  echo "Este programa tiene por objetivo analizar los resultados de encuestas de satisfaccion de clientes"
+  echo "de un servicio de atención al cliente. Relevará los datos en el directorio enviado e imprimira (en un archivo o por pantalla)"
+  echo "los promedios de tiempo de respuesta y satisfaccion del cliente por fecha y por canal"
+  echo "Para correr el script es necesario tener instalado el paquete jq."
+  echo ""
+  echo "La llamada al script sera de la siguiente manera: $0 -d | --directorio <directorio> [-a | -archivo <archivo> | -p]"
+  echo "  -d  directorio de entrada (obligatorio)"
+  echo "  -a  archivo de salida (excluyente con -p)"
+  echo "  -p  mostrar salida por pantalla (excluyente con -a)"
+  echo "  -h  mostrar esta ayuda (Se ignora el resto de comandos)"
+  echo ""
+  exit 0
+
+}
 
 
 parsed=$(getopt -o d:a:ph -l directorio:,archivo:,pantalla,help -- "$@") || {
-  echo "Uso: $0 -d <directorio> [-a <archivo> | -p]"; exit 2; }
+  echo "Uso: $0 -d <directorio> [-a <archivo> | -p]
+Para mas detalles sobre el script usar -h | --help"; exit 2; }
 eval set -- "$parsed"
 
 while true; do
@@ -45,18 +62,7 @@ while true; do
 done
 
 if [[ "$AYUDA" -eq 1 ]]; then
-  echo ""
-  echo "Este programa tiene por objetivo analizar los resultados de encuestas de satisfaccion de clientes"
-  echo "de un servicio de atención al cliente. Relevará los datos en el directorio enviado e imprimira (en un archivo o por pantalla)"
-  echo "los promedios de tiempo de respuesta y satisfaccion del cliente por fecha y por canal"
-  echo ""
-  echo "La llamada al script sera de la siguiente manera: $0 -d | --directorio <directorio> [-a | -archivo <archivo> | -p]"
-  echo "  -d  directorio de entrada (obligatorio)"
-  echo "  -a  archivo de salida (excluyente con -p)"
-  echo "  -p  mostrar salida por pantalla (excluyente con -a)"
-  echo "  -h  mostrar esta ayuda"
-  echo ""
-  exit 0
+  ayuda
 fi
 
 # ====== Validaciones ======
@@ -99,7 +105,7 @@ fi
 # Formato esperado del .txt: ID|FECHA(yyyy-mm-dd hh:mm:ss)|CANAL|TIEMPO|min|NOTA(1..5)
 # Se agrupa por fecha (solo día) + canal y se promedian tiempo y nota.
 
-generar_json() {
+function generar_json() {
   awk -F"|" '
   {
       split($2, fecha_hora, " ");
@@ -107,7 +113,7 @@ generar_json() {
       canal = $3;
 
       key = fecha "|" canal;
-      tiempo[key] += $4;     
+      tiempo[key] += $4;
       satis[key]  += $5;
       cuenta[key]++
   }
