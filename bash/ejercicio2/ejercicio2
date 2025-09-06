@@ -1,1 +1,193 @@
 #!/bin/bash
+
+
+MATRIZ=""
+SEPARADOR="|"
+CAMINO=0
+HUB=0  
+AYUDA=0
+
+# ================== FUNCIONES ==================
+
+function abspath_dir() {
+  # Resuelve .. de un DIRECTORIO existente
+  local d="$1"
+  case "$d" in
+    /*|~*) printf '%s\n' "$d" ;;
+    *)     ( cd "$d" 2>/dev/null && pwd ) || return 1 ;;
+  esac
+}
+function abspath_file() {
+  # Convierte RUTA DE ARCHIVO (que puede no existir) a absoluta
+  # resolviendo el directorio padre
+  local f="$1"
+  local dir base
+  dir=$(dirname -- "$f")
+  base=$(basename -- "$f")
+  dir=$(abspath_dir "$dir") || return 1
+  printf '%s/%s\n' "$dir" "$base"
+}
+function ayuda() {
+  cat <<'EOF'
+
+Analiza una red de transporte modelada como matriz de adyacencia.
+Puede:
+  - Determinar el HUB (estación con más conexiones), o
+  - Calcular el/los caminos más cortos (Dijkstra).
+
+REQUISITOS (consigna):
+  • La salida se guarda en "informe.<nombreArchivoEntrada>" en el MISMO directorio
+    del archivo original.  (p. ej.: /ruta/mapa.txt -> /ruta/informe.mapa.txt)
+  • La matriz debe ser cuadrada, simétrica y numérica.
+
+USO:
+  $0 -m|--matriz <archivo>  [-s|--separador <caracter>]  (-c|--camino | -h|--hub)
+  $0 -H | --help
+
+PARÁMETROS:
+  -m, --matriz      Ruta del archivo de la matriz (obligatorio). Acepta relativa o absoluta.
+  -s, --separador   Separador de columnas (opcional). Default: "|" (pipe).
+                    Para tabulador, usá: $'\t'
+  -c, --camino      Calcula camino(s) más corto(s) (mutuamente excluyente con --hub).
+  -h, --hub         Determina la estación HUB (mutuamente excluyente con --camino).
+  -H, --help        Muestra esta ayuda y termina.
+
+REGLAS:
+  • Debe pasarse -m y EXACTAMENTE una de -c o -h.
+  • La salida se escribe en el mismo directorio que la matriz con prefijo "informe.".
+  • Los errores y mensajes se envían a stderr; la salida útil al archivo indicado.
+
+EJEMPLOS:
+  # HUB con separador por defecto (pipe)
+  $0 -m ./datos/mapa_transporte.txt --hub
+
+  # Camino más corto usando ";" como separador
+  $0 --matriz /tmp/mapa.csv --separador ';' --camino
+
+EOF
+  exit 0
+}
+
+
+#function camino() {
+#}
+#function hub() {
+#}
+function validar_y_cargar_matriz() {
+  local archivo="$1" sep="$2"
+
+  [[ -f "$archivo" ]] || { echo "Error: no existe archivo $archivo" >&2; return 1; }
+
+  declare -g -A MAT
+  local fila=0 cols_esperadas=-1
+
+  while IFS= read -r linea || [[ -n "$linea" ]]; do
+    IFS="$sep" read -r -a celdas <<< "$linea"
+    local cols=${#celdas[@]}
+
+    # Definir cantidad de columnas esperadas
+    if (( cols_esperadas < 0 )); then
+      cols_esperadas=$cols
+    fi
+
+    # Verificar que la fila tiene la misma cantidad de columnas
+    if (( cols != cols_esperadas )); then
+      echo "Error: fila $((fila+1)) tiene $cols columnas, se esperaban $cols_esperadas" >&2
+      return 2
+    fi
+
+    # Verificar que cada valor sea numérico y no negativo
+    for v in "${celdas[@]}"; do
+      if ! [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo "Error: valor no numérico en fila $((fila+1)): '$v'" >&2
+        return 3
+      fi
+    done
+
+    # Cargar provisionalmente en la matriz
+    for ((col=0; col<cols; col++)); do
+      MAT["$fila,$col"]="${celdas[$col]}"
+    done
+    ((fila++))
+  done < <(tr -d '\r' < "$archivo") # Usamos esto para elimiar el carriage return del formato de archivo windows
+  #Si el archivo viene de linux solamente se usa el \n, entonces si queremos eliminar el \r no pasa nada porque no hay
+  
+  # Verificar que es cuadrada
+  if (( fila != cols_esperadas )); then
+    echo "Error: matriz no es cuadrada (${fila}x${cols_esperadas})" >&2
+    return 4
+  fi
+
+  N=$fila
+
+  # Verificar simetría
+  for ((i=0; i<N; i++)); do
+    for ((j=0; j<N; j++)); do
+      if [[ "${MAT["$i,$j"]}" != "${MAT["$j,$i"]}" ]]; then
+        echo "Error: matriz no simétrica en posición ($i,$j)" >&2
+        return 5
+      fi
+    done
+  done
+
+  echo "OK: matriz ${N}x${N} validada y cargada"
+  return 0
+}
+
+options=$(getopt -o m:s:c,h,H -l matriz:,separador:,camino,hub,help -- "$@") || {
+  echo "Uso: $0 -d <directorio> [-a <archivo> | -p]
+Para mas detalles sobre el script usar -h | --help"; exit 2; }
+
+eval set -- "$options"
+
+while true; do
+  case "$1" in
+    -m|--matriz)       MATRIZ="$(abspath_file "$2")"; shift 2 ;;
+    -s|--separador)    SEPARADOR="$2"; shift 2 ;;
+    -c|--camino)       CAMINO=1; shift ;;
+    -h|--hub)          HUB=1; shift ;;
+    -H|--help)         ayuda ;;
+    --)                shift; break ;;
+    *)                 echo "Opción inválida: $1" >&2; exit 2 ;;
+  esac
+done
+
+
+# ================== VALIDACIONES ==================
+# Archivo obligatorio y existente
+if [ -z "$MATRIZ" ] || [ ! -f "$MATRIZ" ]; then
+  echo "Error: faltó -m/--matriz o no existe: $MATRIZ" >&2
+  exit 1
+fi
+
+# Exclusión -a / -p
+if [ "$CAMINO" -eq 1 ] && [ "$HUB" -eq 1 ]; then
+  echo "Error: -c/--camino y -h/--hub son excluyentes." >&2
+  exit 1
+fi
+
+# Si no dieron ni -a ni -p → pedimos archivo
+if [ "$CAMINO" -eq 0 ] && [ "$HUB" -eq 0 ]; then
+  echo "Debe eligar al menos una opcion -c|--camino ó -h|--hub para ejecutar el script" 
+  echo "Para mas informacion utilice el comando -H|--help"
+  exit 1
+fi
+
+# ================== SALIDA ==================
+# Separar directorio y nombre de archivo
+dir=$(dirname -- "$MATRIZ")
+base=$(basename -- "$MATRIZ")
+
+# Construir ruta de salida
+SALIDA="$dir/informe.$base"
+
+
+#Imprimimos variables para controlar los valores correctamente 
+echo "Matriz: "$MATRIZ 
+echo "Separador: "$SEPARADOR
+echo "Camino: "$CAMINO 
+echo "HUB: "$HUB 
+echo "Ayuda: "$AYUDA 
+echo "Salida: "$SALIDA
+
+validar_y_cargar_matriz "$MATRIZ" "$SEPARADOR" || exit $?

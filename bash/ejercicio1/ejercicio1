@@ -27,22 +27,42 @@ function abspath_file() {
   dir=$(abspath_dir "$dir") || return 1
   printf '%s/%s\n' "$dir" "$base"
 }
-function ayuda () {
-  echo ""
-  echo "Este programa tiene por objetivo analizar los resultados de encuestas de satisfaccion de clientes"
-  echo "de un servicio de atención al cliente. Relevará los datos en el directorio enviado e imprimira (en un archivo o por pantalla)"
-  echo "los promedios de tiempo de respuesta y satisfaccion del cliente por fecha y por canal"
-  echo "Para correr el script es necesario tener instalado el paquete jq."
-  echo ""
-  echo "La llamada al script sera de la siguiente manera: $0 -d | --directorio <directorio> [-a | -archivo <archivo> | -p]"
-  echo "  -d  directorio de entrada (obligatorio)"
-  echo "  -a  archivo de salida (excluyente con -p)"
-  echo "  -p  mostrar salida por pantalla (excluyente con -a)"
-  echo "  -h  mostrar esta ayuda (Se ignora el resto de comandos)"
-  echo ""
-  exit 0
+function ayuda() {
+  cat <<'EOF'
 
+Analiza encuestas de satisfacción de clientes a partir de archivos de texto.
+Cada archivo tiene líneas con formato:
+  ID_ENCUESTA|FECHA|CANAL|TIEMPO_RESPUESTA|NOTA_SATISFACCION
+
+El script calcula:
+  • Promedio de tiempo de respuesta por fecha y canal
+  • Promedio de nota de satisfacción por fecha y canal
+
+REQUISITOS:
+  • Tener instalado el paquete "jq" para procesar la salida en JSON.
+  • Los archivos de entrada se leen desde un directorio dado.
+
+USO:
+  $0 -d|--directorio <directorio>   [-a|--archivo <archivo> | -p|--pantalla]
+  $0 -h|--help
+
+PARÁMETROS:
+  -d, --directorio   Directorio con archivos de encuestas (obligatorio).
+  -a, --archivo      Archivo JSON de salida (excluyente con -p).
+  -p, --pantalla     Muestra la salida por pantalla (excluyente con -a).
+  -h, --help         Muestra esta ayuda (ignora el resto de parámetros).
+
+EJEMPLOS:
+  # Procesar encuestas y ver resultado por pantalla
+  $0 --directorio ./datos --pantalla
+
+  # Procesar encuestas y guardar en un JSON
+  $0 -d ./datos -a salida.json
+
+EOF
+  exit 0
 }
+
 
 
 parsed=$(getopt -o d:a:ph -l directorio:,archivo:,pantalla,help -- "$@") || {
@@ -55,15 +75,11 @@ while true; do
     -d|--directorio) DIR="$(abspath_dir "$2")"; shift 2 ;;
     -a|--archivo)    ARCHIVO="$(abspath_file "$2")"; shift 2 ;;
     -p|--pantalla)   PANTALLA=1; shift ;;
-    -h|--help)       AYUDA=1; shift ;;
+    -h|--help)       ayuda ;;
     --)              shift; break ;;
     *)               echo "Opción inválida: $1" >&2; exit 2 ;;
   esac
 done
-
-if [[ "$AYUDA" -eq 1 ]]; then
-  ayuda
-fi
 
 # ====== Validaciones ======
 # Directorio obligatorio y existente
