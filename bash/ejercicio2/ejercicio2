@@ -6,8 +6,26 @@ SEPARADOR="|"
 CAMINO=0
 HUB=0  
 AYUDA=0
+INF=1e300  # “infinito” para inicializar distancias
+
+# ================== VARIABLES GLOBALES ================== 
+declare -A MAT # Matriz asociativa con posiciones I J para Fila Columna "-A"
+declare -a dist visit
+declare -a prev_parents
 
 # ================== FUNCIONES ==================
+# ================== HELPERS ==================
+# Suma de flotantes
+f_add() { awk -v a="$1" -v b="$2" 'BEGIN{printf "%.15g\n", a+b}'; }
+
+# a < b con tolerancia (evita problemas por redondeo)
+f_lt()  { awk -v a="$1" -v b="$2" 'BEGIN{eps=1e-9; exit !(a < b - eps)}'; }
+
+# a == b con tolerancia
+f_eq()  { awk -v a="$1" -v b="$2" 'BEGIN{eps=1e-9; d=a-b; if (d<0) d=-d; exit !(d<eps)}'; }
+
+# Comparación numérica flotante: retorna 0 si x>0, 1 si no
+es_pos() { awk -v x="$1" 'BEGIN{exit !(x>0)}'; }  # usar: if es_pos "$v"; then ...
 
 function abspath_dir() {
   # Resuelve .. de un DIRECTORIO existente
@@ -27,12 +45,71 @@ function abspath_file() {
   dir=$(abspath_dir "$dir") || return 1
   printf '%s/%s\n' "$dir" "$base"
 }
+
+dijkstra_desde() {  # $1 = origen s (0..N-1)
+  local s="$1"
+  dist=(); visit=(); prev_parents=()
+
+  # 1) inicialización
+  for ((i=0;i<N;i++)); do
+    dist[$i]="$INF"
+    visit[$i]=0
+    prev_parents[$i]=""   # lista de posibles padres
+  done
+  dist[$s]=0
+
+  # 2) N iteraciones: elegir el no visitado con menor dist y relajar vecinos
+  for ((k=0;k<N;k++)); do
+    # 2a) elegir u
+    local u=-1 best="$INF"
+    for ((i=0;i<N;i++)); do
+      if [[ ${visit[$i]} -eq 0 ]] && f_lt "${dist[$i]}" "$best"; then
+        u=$i; best="${dist[$i]}"
+      fi
+    done
+    [[ $u -lt 0 ]] && break  # no quedan alcanzables
+
+    visit[$u]=1
+
+    # 2b) relajar u -> v
+    for ((v=0; v<N; v++)); do
+      (( u==v )) && continue
+      local w="${MAT["$u,$v"]}"
+      if es_pos "$w"; then               # hay arista si w>0
+        local new; new=$(f_add "${dist[$u]}" "$w")
+        if f_lt "$new" "${dist[$v]}"; then
+          dist[$v]="$new"
+          prev_parents[$v]="$u"          # reemplaza padres
+        elif f_eq "$new" "${dist[$v]}"; then
+          prev_parents[$v]="${prev_parents[$v]} $u"   # agrega padre (empate)
+        fi
+      fi
+    done
+  done
+}
+
+# Imprime cada camino como "s ... t" (índices 0-based, después los embellecemos)
+reconstruir_caminos() {  # $1=s $2=t $3=acum_en_orden_inverso
+  local s="$1" t="$2" acum="$3"
+
+  if [[ $t -eq $s ]]; then
+    echo "$t $acum"
+    return
+  fi
+
+  for p in ${prev_parents[$t]}; do
+    [[ -z "$p" ]] && continue
+    reconstruir_caminos "$s" "$p" "$t $acum"
+  done
+}
+
+# ================== FUNCIONES DE CODIGO ==================
 function ayuda() {
   cat <<'EOF'
 
 Analiza una red de transporte modelada como matriz de adyacencia.
 Puede:
-  - Determinar el HUB (estación con más conexiones), o
+  - Determinar el o los HUBS (estación/es con más conexiones), o
   - Calcular el/los caminos más cortos (Dijkstra).
 
 REQUISITOS (consigna):
@@ -69,16 +146,88 @@ EOF
 }
 
 
-#function camino() {
-#}
-#function hub() {
-#}
+camino() {
+  local max_global="-1"
+  local -a PARES_MAX=()
+
+  for ((s=0; s<N; s++)); do
+    dijkstra_desde "$s"
+    for ((t=0; t<N; t++)); do
+      (( t == s )) && continue
+      # descartar no alcanzables
+      if ! f_eq "${dist[$t]}" "$INF"; then
+        if f_lt "$max_global" "${dist[$t]}"; then    # dist > max_global
+          max_global="${dist[$t]}"
+          PARES_MAX=( "$s,$t" )
+        elif f_eq "${dist[$t]}" "$max_global"; then  # empate
+          PARES_MAX+=( "$s,$t" )
+        fi
+      fi
+    done
+  done
+
+  {
+    echo "## Informe de análisis de red de transporte"
+    echo "**Camino(s) más corto(s) de punta a punta (diámetro):**"
+    echo "**Tiempo total:** $max_global"
+    echo "**Rutas (estaciones 1..$N):**"
+  } > "$SALIDA"
+
+  for par in "${PARES_MAX[@]}"; do
+    IFS=',' read -r s t <<< "$par"
+    dijkstra_desde "$s"
+    while IFS= read -r path; do
+      pretty=$(awk '{
+        out=""; for(i=1;i<=NF;i++){ if(i>1) out=out" -> "; out=out"" ($i+1) } print out
+      }' <<< "$path")
+      echo "- $pretty" >> "$SALIDA"
+    done < <(reconstruir_caminos "$s" "$t" "")
+  done
+
+  echo "Informe escrito en: $SALIDA"
+}
+
+
+
+
+
+function resolver_hub() {
+  local -a DEG              # DEG[i] = conexiones de la estación i
+  local max=-1
+  local i j v
+
+  # Contar conexiones por fila (grado)
+  for ((i=0; i<N; i++)); do
+    DEG[$i]=0
+    for ((j=0; j<N; j++)); do
+      (( i == j )) && continue           # ignorar diagonal
+      v=${MAT["$i,$j"]}
+      if es_pos "$v"; then               # cuenta si v > 0 (soporta decimales)
+        (( DEG[$i]++ ))
+      fi
+    done
+    (( DEG[$i] > max )) && max=${DEG[$i]}
+  done
+
+  # Recolectar TODAS las estaciones con grado == max
+  local -a HUBS=()
+  for ((i=0; i<N; i++)); do
+    (( DEG[$i] == max )) && HUBS+=( "$i" )
+  done
+
+  # Mostrar/usar el resultado (estaciones 1..N para el informe)
+  echo "**Hub de la red:** ($max conexiones):"
+  for idx in "${HUBS[@]}"; do
+    echo "  - Estación $((idx+1))"
+  done
+}
+
 function validar_y_cargar_matriz() {
   local archivo="$1" sep="$2"
 
   [[ -f "$archivo" ]] || { echo "Error: no existe archivo $archivo" >&2; return 1; }
 
-  declare -g -A MAT
+  
   local fila=0 cols_esperadas=-1
 
   while IFS= read -r linea || [[ -n "$linea" ]]; do
@@ -173,6 +322,8 @@ if [ "$CAMINO" -eq 0 ] && [ "$HUB" -eq 0 ]; then
   exit 1
 fi
 
+validar_y_cargar_matriz "$MATRIZ" "$SEPARADOR"
+
 # ================== SALIDA ==================
 # Separar directorio y nombre de archivo
 dir=$(dirname -- "$MATRIZ")
@@ -180,6 +331,22 @@ base=$(basename -- "$MATRIZ")
 
 # Construir ruta de salida
 SALIDA="$dir/informe.$base"
+
+
+
+if [ "$CAMINO" -eq 1 ]; then
+  camino
+fi
+
+if [ "$HUB" -eq 1 ]; then
+  {
+    echo "##Informe de analisis de red de transporte ## "
+    resolver_hub
+  } > "$SALIDA"
+  
+fi
+
+
 
 
 #Imprimimos variables para controlar los valores correctamente 
@@ -190,4 +357,4 @@ echo "HUB: "$HUB
 echo "Ayuda: "$AYUDA 
 echo "Salida: "$SALIDA
 
-validar_y_cargar_matriz "$MATRIZ" "$SEPARADOR" || exit $?
+
