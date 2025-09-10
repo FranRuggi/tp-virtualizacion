@@ -66,8 +66,15 @@ do
             exit 0
             ;;
         -t | --ttl)
-            if [ -z "$2" ] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
-                echo "Error: Se esperaba un valor numérico para el parámetro -t o --ttl."
+            #Verifico si está vacío
+            if [ -z "$2" ]; then
+                echo "Error: Falta un valor para el parámetro -t o --ttl."
+                exit 1
+            fi
+
+            #Verifico si es un número entero
+            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                echo "Error: El valor del parámetro -t o --ttl debe ser un número entero positivo."
                 exit 1
             fi
             ttlActual=$2 #si me paso primero el parametro de ttl, lo tomo y paso a procesar el string de paises
