@@ -87,6 +87,7 @@ BEGIN {
     }
 }
 END {
+    printf "Conteo por palabra:\n"
     for (i=1; i<=n; i++) {
         printf "%s: %d\n", keys[i], counts[keys[i]];
     }

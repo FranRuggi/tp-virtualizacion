@@ -1,119 +1,141 @@
-#!/bin/bash
+#!/usr/bin/env pwsh
+param(
+    [Alias("d")]
+    [Parameter(Mandatory=$true)]
+    [string]$Directorio,
 
-# --- Función de ayuda ---
-function mostrar_ayuda {
-  echo "Uso: $0 -d <directorio o archivo .log> -p <palabras separadas por coma>"
-  echo
-  echo "Parámetros:"
-  echo "  -d, --directorio   Ruta al directorio que contiene un único .log o un archivo .log específico"
-  echo "  -p, --palabras     Lista de palabras clave separadas por coma (ejemplo: usb,invalid)"
-  echo "  -h, --help         Muestra esta ayuda y termina"
-  echo
-  echo "Ejemplos:"
-  echo "  $0 -d /var/logs -p usb,invalid"
-  echo "  $0 -d ./system.log -p \"usb,invalid\""
+    [Alias("p")]
+    [Parameter(Mandatory=$true)]
+    [string]$Palabras,
+
+    [switch]$Recursivo,
+    [switch]$Boundaries,     # contar palabra exacta con \b...\b
+    [switch]$CaseSensitive,  # por defecto es insensible
+    [Alias("h")]
+    [switch]$Help
+)
+
+function Get-HelpText {
+@"
+
+
+Uso:
+  .\ejercicio3.ps1 -Directorio <dir | archivo.log> -Palabras <lista separada por coma> [-Recursivo] [-Boundaries] [-CaseSensitive]
+
+Parámetros:
+  -Directorio (-d)    Ruta a un directorio o a un archivo .log
+  -Palabras  (-p)     Lista separada por coma:  usb,invalid,error  (ignora espacios)
+  -Recursivo          Si es directorio, busca .log en subcarpetas
+  -Boundaries         Coincidencias por palabra exacta (usa \b... \b)
+  -CaseSensitive      Sensible a mayúsculas/minúsculas (por defecto NO)
+
+Ejemplos:
+  .\ejercicio3.ps1 -d .\system.log -p "usb,invalid"
+  .\ejercicio3.ps1 -d C:\Logs -p "error,timeout" -Recursivo
+  .\ejercicio3.ps1 -d ./logs -p "usb" -Boundaries
+
+"@ | Write-Host
+}
+if ($Help) { Get-HelpText; exit 0 }
+
+# ============ Validación básica ============
+if ([string]::IsNullOrWhiteSpace($Directorio) -or [string]::IsNullOrWhiteSpace($Palabras)) {
+    Write-Host "Error: Faltan parámetros obligatorios." -ForegroundColor Red
+    Show-Help
+    exit 1
 }
 
-# --- 1. Parseo de parámetros ---
-if [[ $# -eq 0 ]]; then
-  mostrar_ayuda
-  exit 1
-fi
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -h|--help)
-      mostrar_ayuda
-      exit 0
-      ;;
-    -d|--directorio)
-      if [[ -z "$2" || "$2" == -* ]]; then
-        echo "Error: Falta argumento para $1"
-        exit 1
-      fi
-      DIR="$2"
-      shift 2
-      ;;
-    -p|--palabras)
-      if [[ -z "$2" || "$2" == -* ]]; then
-        echo "Error: Falta argumento para $1"
-        exit 1
-      fi
-      # Validar que no sean solo espacios
-      if [[ -z "${2// /}" ]]; then
-        echo "Error: El parámetro -p/--palabras no puede estar vacío ni ser solo espacios."
-        exit 1
-      fi
-      PALABRAS="$2"
-      shift 2
-      ;;
-    *)
-      echo "Uso: $0 -d <directorio o archivo .log> -p <palabras separadas por coma>"
-      exit 1
-      ;;
-  esac
-done
-
-# --- 2. Validar parámetros obligatorios ---
-if [[ -z "$DIR" || -z "$PALABRAS" ]]; then
-  echo "Error: Faltan parámetros obligatorios. Uso: $0 -d <directorio o archivo .log> -p <palabras>"
-  exit 1
-fi
-
-# --- 3. Validar palabras separadas por coma ---
-if [[ "$PALABRAS" != *","* && "$PALABRAS" != *"," ]]; then
-  if [[ "$PALABRAS" == *" "* ]]; then
-    echo "Error: Las palabras clave deben ir separadas por coma. Ej: usb,invalid"
+# ============ Normalizar y validar palabras ============
+$keywords = @()
+foreach ($raw in ($Palabras -split ",")) {
+    $k = $raw.Trim()
+    if ($k.Length -gt 0) { $keywords += $k }
+}
+if ($keywords.Count -eq 0) {
+    Write-Host "Error: No hay palabras válidas después de separar por coma." -ForegroundColor Red
     exit 1
-  fi
-fi
+}
 
-# --- 4. Validar directorio/archivo ---
-if [[ -d "$DIR" ]]; then
-    FILES=( "$DIR"/*.log )
-    NUM_FILES=${#FILES[@]}
-    
-    if [[ $NUM_FILES -eq 0 ]]; then
-        echo "Error: No se encontraron archivos .log en el directorio $DIR"
+# ============ Resolver ruta y armar lista de archivos ============
+$archivos = @()
+
+if (Test-Path -LiteralPath $Directorio -PathType Leaf) {
+    if ([IO.Path]::GetExtension($Directorio) -ne ".log") {
+        Write-Host "Error: El archivo especificado no tiene extensión .log" -ForegroundColor Red
         exit 1
-    elif [[ $NUM_FILES -gt 1 ]]; then
-        echo "Error: Hay más de un archivo .log en el directorio $DIR. No se puede procesar."
+    }
+    $archivos = @((Resolve-Path -LiteralPath $Directorio).Path)
+}
+elseif (Test-Path -LiteralPath $Directorio -PathType Container) {
+    $gciParams = @{
+        Path        = $Directorio
+        Filter      = "*.log"
+        File        = $true
+        ErrorAction = "Stop"
+    }
+    if ($Recursivo) { $gciParams.Recurse = $true }
+    $logs = Get-ChildItem @gciParams
+    if (-not $logs -or $logs.Count -eq 0) {
+        Write-Host "Error: No se encontraron archivos .log en $Directorio" -ForegroundColor Red
         exit 1
-    fi
-    FILES="${FILES[0]}"  # Solo un archivo, lo procesamos
-elif [[ -f "$DIR" ]]; then
-    if [[ "$DIR" != *.log ]]; then
-        echo "Error: El archivo especificado no tiene extensión .log"
-        exit 1
-    fi
-    FILES="$DIR"
-else
-    echo "Error: No existe el directorio o archivo especificado: $DIR"
+    }
+    $archivos = $logs.FullName
+}
+else {
+    Write-Host "Error: No existe el directorio/archivo: $Directorio" -ForegroundColor Red
     exit 1
-fi
+}
 
-# --- 5. Convertir palabras clave a minúsculas para búsqueda case-insensitive ---
-KEYWORDS=$(echo "$PALABRAS" | tr '[:upper:]' '[:lower:]' | tr ',' ' ')
+# ============ Preparar comparadores ============
+# Por defecto, insensible a mayúsculas: normalizamos línea y keywords a minúsculas
+$normKeywords = if ($CaseSensitive) { $keywords } else { $keywords | ForEach-Object { $_.ToLowerInvariant() } }
 
-# --- 6. Procesar con awk ---
-awk -v words="$KEYWORDS" '
-BEGIN {
-    n=split(words, keys, " ");
-    for (i=1; i<=n; i++) {
-        counts[keys[i]]=0;
+# Si Boundaries, usamos regex escapado; si no, Contains/IndexOf
+$regexes = @()
+if ($Boundaries) {
+    foreach ($k in $keywords) {
+        $pat = "\b{0}\b" -f [Regex]::Escape($k)
+        $options = if ($CaseSensitive) { [System.Text.RegularExpressions.RegexOptions]::None } else { [System.Text.RegularExpressions.RegexOptions]::IgnoreCase }
+        $regexes += [Regex]::new($pat, $options)
     }
 }
-{
-    line=tolower($0);
-    for (i=1; i<=n; i++) {
-        if (index(line, keys[i])) {
-            counts[keys[i]]++;
+
+# ============ Contadores ============
+$countMap = [ordered]@{}
+foreach ($k in $normKeywords) { $countMap[$k] = 0 }
+
+# ============ Procesamiento ============
+foreach ($archivo in $archivos) {
+
+    # Leer en bloques para logs grandes
+    Get-Content -LiteralPath $archivo -ReadCount 1000 | ForEach-Object {
+        foreach ($line in $_) {
+            if ($Boundaries) {
+                # regex (palabra exacta)
+                for ($i=0; $i -lt $regexes.Count; $i++) {
+                    if ($regexes[$i].IsMatch($line)) {
+                        $countMap[$normKeywords[$i]]++
+                    }
+                }
+            } else {
+                # contains simple
+                $line2 = if ($CaseSensitive) { $line } else { $line.ToLowerInvariant() }
+                foreach ($k in $normKeywords) {
+                    if ($line2.Contains($k)) { $countMap[$k]++ }
+                }
+            }
         }
     }
 }
-END {
-    for (i=1; i<=n; i++) {
-        printf "%s: %d\n", keys[i], counts[keys[i]];
+
+# ============ Salida ============
+Write-Host "Conteo por palabra:"
+foreach ($k in $countMap.Keys) {
+    # si no CaseSensitive, mostramos la palabra original si existe única
+    $display = if ($CaseSensitive) { $k } else {
+        # buscar el original que matchee (por prolijidad al mostrar)
+        $orig = $keywords | Where-Object { $_.ToLowerInvariant() -eq $k } | Select-Object -First 1
+        if ($orig) { $orig } else { $k }
     }
+    "{0}: {1}" -f $display, $countMap[$k] | Write-Host
 }
-' "$FILES"
