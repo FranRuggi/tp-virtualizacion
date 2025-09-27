@@ -100,15 +100,6 @@ if ($Archivo) {
     }
 }
 
-# ========== Procesamiento ==========
-# Estructura de salida deseada:
-# {
-#   "2025-05-01": {
-#       "Web":   { "tiempo_respuesta_promedio": X, "nota_satisfaccion_promedio": Y },
-#       "Phone": { ... }
-#   },
-#   ...
-# }
 
 # Agregado por clave "fecha|canal"
 $agg = @{}  # key -> @{TiempoSum=..; SatisSum=..; Count=..}
