@@ -17,6 +17,35 @@ sanitize_path() {
     [[ -n "$abs_path" ]] || return 1
     printf "%s\n" "$abs_path"
 }
+ayuda() {
+    cat <<EOF
+Uso: $0 -r <repo> -c <config> [opciones]
+
+Este script arranca un demonio que audita un repositorio Git en busca de
+patrones sensibles (ej. contraseñas, claves privadas, tokens) definidos
+en un archivo de configuración.
+
+Opciones obligatorias:
+  -r, --repo <repo>         Ruta al repositorio Git a auditar
+  -c, --configuracion <cfg> Archivo con patrones (patterns.conf)
+
+Opciones opcionales:
+  -l, --log <log>           Archivo de log donde se registran alertas
+                            (por defecto: ./audit.log)
+  --sleep <segundos>        Intervalo entre chequeos (default: 10s)
+  -k, --kill                Detiene el demonio asociado al repo indicado
+  -h, --help                Muestra esta ayuda
+
+Ejemplos:
+  # Iniciar el demonio 
+  $0 -r ./mi_repo -c ./patterns.conf -l ./audit.log
+
+  # Detener el demonio
+  $0 -r ./mi_repo -k
+
+EOF
+}
+
 
 validate_patterns() {
     # Lee patrones, limpia CRLF, descarta comentarios/vacías y devuelve líneas intactas
@@ -138,9 +167,9 @@ main() {
             --sleep) SLEEP_SECONDS="$2"; shift 2 ;;
             -k|--kill) KILL_FLAG=true; shift ;;
             -h|--help)
-                printf "Uso: %s -r <repo> -c <config> [-l <log>] [--sleep <seg>] [-k]\n" "$0"
+                ayuda;
                 return 0 ;;
-            *) printf "Uso: %s -r <repo> -c <config>\n" "$0" >&2; return 1 ;;
+            *) return 1 ;;
         esac
     done
 
