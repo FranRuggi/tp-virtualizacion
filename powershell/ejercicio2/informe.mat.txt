@@ -1,0 +1,6 @@
+## Informe de análisis de red de transporte
+**Recorrido(s) más rápido(s) que visitan todas las estaciones (0..5):**
+**Costo total mínimo:** 10
+**Ruta(s) (estaciones 1..5):**
+- 1 -> 2 -> 5 -> 3 -> 4
+- 4 -> 3 -> 5 -> 2 -> 1
