@@ -1,3 +1,10 @@
+#Grupo: 2
+#Integrantes:
+#   *CROTTI, TOMÁS
+#   *RIVERA, VICTOR
+#   *ROMBOLA, FACUNDO
+#   *RUGGIERI, FRANCO
+#   *RUGGIERO, ZOIS
 
 PAISES=()
 rutaBaseCache="." #Aca debe ir "/tmp" por criterio de correcion
