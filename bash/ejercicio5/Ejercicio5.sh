@@ -39,8 +39,15 @@ function mostrarInfoPaises () {
         fi
          #consulto a la api por que no existe o no esta dentro del tiempo valido
         echo "usando API"
-        wget -qO- https://restcountries.com/v3.1/name/"$pais" | jq '.[0]' > "$rutaCompleArchTem" #lo guardo com un objeto, la API devuelve un array de un elemento
-        jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
+        #lo guardo com un objeto, la API devuelve un array de un elemento
+        respuesta=$(wget -qO- https://restcountries.com/v3.1/name/"$pais" | jq '.[0]')
+        if [ -n "$respuesta" ];then
+            echo "$respuesta" > "$rutaCompleArchTem"
+            echo "$respuesta" | jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"'
+        else
+            echo "Error al obtener informacion del pais: $pais"
+        fi
+        #jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
         echo ""
     done
 }
@@ -60,7 +67,12 @@ do
             IFS=',' read -r -a PAISES <<< "$CLEAN" #Capturo todos los paises que me pasan por parametro
             if (( ttlActual == -1 )); then #si no entra, quiere decir que primero paso el ttl
                 shift 2 #una vez que ya tengo todos los paises puedo shiftear
-                ttlActual=$2
+                if [[ "$1" == "-t" || "$1" == "--ttl" ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+                    ttlActual=$2
+                else
+                    echo "Error: falta el valor de de las opciones -t, --ttl, para mas detalles vea la ayuda ejecutando la opcion -h"
+                    exit 0
+                fi
             fi
             mostrarInfoPaises
             exit 0
