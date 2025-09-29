@@ -1,4 +1,0 @@
-[2025-09-27 17:55:47] Iniciando escaneo del repositorio: ./myrepo
-[2025-09-27 17:55:47] Nuevo commit detectado en el repositorio. Hash: bf3bfa2201e2bf545a1b5c3dd2c7ab3b7c8bd503
-[2025-09-27 17:58:28] Nuevo commit detectado en el repositorio. Hash: 76f48cf96dbbaed6cc188c1a70316a2d483d9ec9
-[2025-09-27 17:58:28] Alerta: Patrón 'API_KEY' encontrado en el archivo 'README.md'.
