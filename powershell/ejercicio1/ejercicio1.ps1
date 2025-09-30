@@ -1,3 +1,52 @@
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
+<#
+.SYNOPSIS
+Analiza encuestas de satisfacción de clientes desde archivos de texto y genera estadísticas por fecha y canal.
+
+.DESCRIPTION
+Este script procesa archivos de texto con encuestas de satisfacción de clientes.
+Cada línea del archivo debe tener el formato:
+ID|FECHA(yyyy-mm-dd hh:mm:ss)|CANAL|TIEMPO|NOTA
+
+El script calcula:
+  • Promedio de tiempo de respuesta por fecha y canal.
+  • Promedio de nota de satisfacción por fecha y canal.
+
+La salida puede generarse en un archivo JSON o mostrarse directamente en pantalla.
+
+.PARAMETER Directorio
+Ruta al directorio que contiene los archivos de encuestas (.txt). Obligatorio.
+
+.PARAMETER Archivo
+Archivo JSON de salida. Excluyente con -Pantalla. Si no se proporciona, se pedirá la ruta por consola.
+
+.PARAMETER Pantalla
+Muestra los resultados por pantalla en lugar de generar un archivo. Excluyente con -Archivo.
+
+.PARAMETER Help
+Muestra la ayuda del script y finaliza la ejecución.
+
+.EXAMPLE
+.\ej1.ps1 -Directorio "C:\Encuestas" -Archivo "resultados.json"
+Procesa los archivos de C:\Encuestas y guarda los resultados en resultados.json
+
+.EXAMPLE
+.\ej1.ps1 -Directorio "C:\Encuestas" -Pantalla
+Procesa los archivos de C:\Encuestas y muestra los resultados en pantalla.
+
+.EXAMPLE
+.\ej1.ps1 -Help
+Muestra la ayuda del script.
+
+#>
+
 param(
     [string] $Directorio,
     [string] $Archivo,

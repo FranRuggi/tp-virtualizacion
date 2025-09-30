@@ -1,3 +1,11 @@
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
 <# 
 .SYNOPSIS
 Monitorea un repositorio Git y registra alertas si detecta patrones sensibles en archivos modificados.

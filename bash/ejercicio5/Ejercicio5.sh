@@ -1,10 +1,10 @@
-#Grupo: 2
-#Integrantes:
-#   *CROTTI, TOMÁS
-#   *RIVERA, VICTOR
-#   *ROMBOLA, FACUNDO
-#   *RUGGIERI, FRANCO
-#   *RUGGIERO, ZOIS
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
 
 PAISES=()
 rutaBaseCache="." #Aca debe ir "/tmp" por criterio de correcion

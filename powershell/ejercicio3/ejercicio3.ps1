@@ -1,3 +1,54 @@
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
+<#
+.SYNOPSIS
+Cuenta ocurrencias de palabras clave en archivos .log dentro de un directorio o archivo específico.
+
+.DESCRIPTION
+Este script permite buscar palabras clave dentro de archivos de log (.log) en un directorio o archivo.
+Opcionalmente puede:
+- Buscar recursivamente en subdirectorios.
+- Contar solo coincidencias exactas de palabras usando límites de palabra (\b).
+- Ser sensible o insensible a mayúsculas/minúsculas.
+
+.PARAMETER Directorio
+Ruta a un archivo .log o a un directorio que contenga archivos .log. Obligatorio.
+
+.PARAMETER Palabras
+Lista separada por coma de palabras a buscar (ejemplo: "error,usb,timeout"). Obligatorio.
+
+.PARAMETER Recursivo
+Si el parámetro apunta a un directorio, busca en todos los subdirectorios también.
+
+.PARAMETER Boundaries
+Cuenta solo coincidencias exactas de palabras (usa \b palabra \b en regex).
+
+.PARAMETER CaseSensitive
+Hace la búsqueda sensible a mayúsculas/minúsculas. Por defecto, es insensible.
+
+.PARAMETER Help
+Muestra esta ayuda y finaliza la ejecución.
+
+.EXAMPLE
+.\ejercicio3.ps1 -d .\system.log -p "usb,invalid"
+Cuenta cuántas veces aparecen "usb" y "invalid" en system.log.
+
+.EXAMPLE
+.\ejercicio3.ps1 -d C:\Logs -p "error,timeout" -Recursivo
+Cuenta "error" y "timeout" en todos los archivos .log del directorio y subdirectorios.
+
+.EXAMPLE
+.\ejercicio3.ps1 -d ./logs -p "usb" -Boundaries
+Cuenta solo las coincidencias exactas de "usb" en los archivos .log del directorio.
+
+#>
+
 #!/usr/bin/env pwsh
 param(
     [Alias("d")]

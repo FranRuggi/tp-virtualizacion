@@ -1,3 +1,11 @@
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
 <#
 .SYNOPSIS
    Este comando obtendra informacion de paises mediante una API publica.
@@ -18,11 +26,8 @@
 
    Consulta los países Argentina y Brasil y guarda sus datos en /tmp, si a partir de que se creo el archivo no supera el tiempo que indica
    el ttl, se usara la informacion de ese archivo, caso contrario se consultara a la API.
-
-.NOTES
-   Autor: Víctor
-   Fecha: 2025-09-11
 #>
+
 Param(
     [Parameter(Mandatory=$True)] [string[]]$nombre,
     [Parameter(Mandatory=$True)] [int]$ttl

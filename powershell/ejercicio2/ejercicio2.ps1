@@ -1,3 +1,52 @@
+# GRUPO 2
+
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
+<#
+.SYNOPSIS
+Analiza una red de transporte modelada como matriz de adyacencia, identificando hubs y caminos mínimos.
+
+.DESCRIPTION
+Este script procesa una red de transporte representada como matriz de adyacencia.
+Cada celda de la matriz representa la distancia (peso) entre estaciones.
+- Hubs: estaciones con mayor número de conexiones (peso > 0).
+- Camino: recorridos mínimos que visiten todas las estaciones (usa Dijkstra para tramos).
+
+La salida se genera como archivo de texto en el mismo directorio que el archivo de matriz.
+
+.PARAMETER Matriz
+Archivo que contiene la matriz de adyacencia. Obligatorio.
+
+.PARAMETER Separador
+Caracter que separa los valores en el archivo de matriz. Por defecto '|'.
+
+.PARAMETER Camino
+Calcula los recorridos mínimos que visitan todas las estaciones.
+
+.PARAMETER Hub
+Identifica las estaciones con mayor grado de conexión.
+
+.PARAMETER Help
+Muestra la ayuda del script y finaliza la ejecución.
+
+.EXAMPLE
+.\ejercicio2.ps1 -Matriz "red.txt" -Hub
+Genera un informe con las estaciones hubs de la red.
+
+.EXAMPLE
+.\ejercicio2.ps1 -Matriz "red.txt" -Camino
+Genera un informe con los recorridos mínimos que visitan todas las estaciones.
+
+.EXAMPLE
+.\ejercicio2.ps1 -Help
+Muestra la ayuda del script.
+
+#>
+
 #!/usr/bin/env pwsh
 param(
     [Alias('m')][string] $Matriz,
