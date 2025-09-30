@@ -30,7 +30,7 @@ pwsh ./ejercicio4.ps1 -Repo ./repo -Configuracion ./patterns.conf -Log ./audit.l
 pwsh ./ejercicio4.ps1 -Repo ./repo -Kill
 
 .NOTES
-Requiere 'git' en PATH. Probado en PowerShell 7+ (WSL/Linux/Windows).
+Requiere 'git' en PATH. Compatible con Windows PowerShell 5.1 y PowerShell 7+ (WSL/Windows).
 #>
 
 [CmdletBinding()]
@@ -51,6 +51,10 @@ param(
     [switch]$RunDaemon
 )
 
+# ======== Pre-chequeos mínimos ========
+try { Get-Command git -ErrorAction Stop | Out-Null }
+catch { Write-Error "No se encontró 'git' en PATH."; exit 1 }
+
 # ======== Constantes ========
 $SleepSeconds = 10
 
@@ -70,7 +74,7 @@ Parámetros:
   -Repo <ruta_repo>           Obligatorio (Git repo)
   -Configuracion <archivo>    Obligatorio al iniciar
   -Log <archivo>              Default: ./audit.log (se crea si no existe)
-  -Kill                       Detiene el daemon del repo
+  -Kill                       Detiene el demonio del repo
   -Help                       Ayuda rápida (para extendida: Get-Help -Detailed ./ejercicio4.ps1)
 
 patterns.conf (ejemplos):
@@ -89,7 +93,6 @@ function Resolve-ExistingPath {
 }
 
 function Get-AbsoluteFilePath {
-    # Devuelve absoluta; si el archivo no existe, lo crea en el CWD.
     param([Parameter(Mandatory)][string]$Path)
     $dir = Split-Path -Path $Path -Parent
     if ([string]::IsNullOrWhiteSpace($dir)) { $dir = (Get-Location).Path }
@@ -116,31 +119,28 @@ function Get-MD5Hex {
     -join ($md5.ComputeHash([Text.Encoding]::UTF8.GetBytes($Text)) | ForEach-Object { $_.ToString("x2") })
 }
 
-# ======== Git runner robusto (WSL-safe, sin derramar STDERR) ========
-function Invoke-Git {
+# ======== Git runner ========
+function Invoke-GitCompat {
     param(
         [Parameter(Mandatory)][string]$RepoPath,
         [Parameter(Mandatory)][string[]]$GitArgs,
-        [string]$LogFile # opcional, para loguear errores
+        [string]$LogFile
     )
-    $psi = [System.Diagnostics.ProcessStartInfo]::new()
-    $psi.FileName = 'git'
-    $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.ArgumentList.Add('-C')        | Out-Null
-    $psi.ArgumentList.Add($RepoPath)   | Out-Null
-    foreach ($a in $GitArgs) { $psi.ArgumentList.Add($a) | Out-Null }
-
-    $p = [System.Diagnostics.Process]::Start($psi)
-    $out = $p.StandardOutput.ReadToEnd()
-    $err = $p.StandardError.ReadToEnd()
-    $p.WaitForExit()
-
-    if ($p.ExitCode -ne 0 -and $LogFile) {
-        Write-Log -Message ("git {0} -> Exit {1} | ERR: {2}" -f ($GitArgs -join ' '), $p.ExitCode, ($err.Trim())) -LogFile $LogFile
+    $cmdArgs = @('-C', $RepoPath) + $GitArgs
+    $out = & git @cmdArgs 2>&1
+    $code = $LASTEXITCODE
+    if ($code -ne 0 -and $LogFile) {
+        Write-Log -Message ("git {0} -> Exit {1} | ERR: {2}" -f ($cmdArgs -join ' '), $code, (($out -join "`n").Trim())) -LogFile $LogFile
     }
-    @{ ExitCode = $p.ExitCode; Stdout = $out; Stderr = $err }
+    [pscustomobject]@{ ExitCode = $code; Output = [string]($out -join "`n") }
+}
+
+function Get-CommitHashFromText([string]$text) {
+    foreach ($line in ($text -split "`r?`n")) {
+        $l = $line.Trim()
+        if ($l -match '^[0-9a-f]{40}$') { return $l }
+    }
+    return $null
 }
 
 # ======== Patterns / files ========
@@ -194,18 +194,17 @@ function Test-FileForPatterns {
 
 # ======== Stop daemon ========
 function Stop-Daemon {
-    param([Parameter(Mandatory)][string]$PidFile,[Parameter(Mandatory)][string]$LogFile)
+    param([Parameter(Mandatory)][string]$PidFile,[Parameter(Mandatory)][string]$LogFile,[string]$RepoPath)
     if (Test-Path -LiteralPath $PidFile -PathType Leaf) {
         $raw = (Get-Content -LiteralPath $PidFile -ErrorAction SilentlyContinue) -join ""
         $SavedPid = ([regex]::Match($raw,'\d+')).Value
         if ($SavedPid) {
             $proc = Get-Process -Id ([int]$SavedPid) -ErrorAction SilentlyContinue
             if ($proc) {
-                Write-Host "Deteniendo el proceso demonio con PID: $SavedPid"
                 try {
                     Stop-Process -Id ([int]$SavedPid) -Force -ErrorAction Stop
                     Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
-                    Write-Log -Message "Demonio detenido." -LogFile $LogFile
+                    Write-Log -Message "Se detuvo el monitoreo del repositorio: $RepoPath" -LogFile $LogFile
                     return $true
                 } catch {
                     Write-Warning ("No se pudo detener el proceso {0}: {1}" -f $SavedPid, $_.Exception.Message)
@@ -245,30 +244,53 @@ if ($RunDaemon) {
         $Configuracion = Resolve-ExistingPath -Path $Configuracion
         $patterns = Read-ValidPatterns -ConfigPath $Configuracion
 
-        # “Desde ahora”: no procesar el HEAD inicial
-        $head = Invoke-Git -RepoPath $Repo -GitArgs @('rev-parse','HEAD') -LogFile $Log
-        $last = if ($head.ExitCode -eq 0) { $head.Stdout.Trim() } else { $null }
+        # HEAD inicial
+        $head = Invoke-GitCompat -RepoPath $Repo -GitArgs @('rev-parse','HEAD')
+        $last = Get-CommitHashFromText $head.Output
 
-        Write-Log -Message "Iniciando demonio para el repositorio: $Repo" -LogFile $Log
+        if ($null -eq $last) {
+            Write-Log -Message "Repositorio $Repo vacío, esperando primer commit..." -LogFile $Log
+        } else {
+            Write-Log -Message "Se inició el monitoreo del repositorio: $Repo" -LogFile $Log
+        }
 
         while ($true) {
-            $res = Invoke-Git -RepoPath $Repo -GitArgs @('rev-parse','HEAD') -LogFile $Log
-            $current = if ($res.ExitCode -eq 0) { $res.Stdout.Trim() } else { $null }
+            $res     = Invoke-GitCompat -RepoPath $Repo -GitArgs @('rev-parse','HEAD')
+            $current = Get-CommitHashFromText $res.Output
 
-            if ($null -ne $current -and $current -ne $last) {
-                Write-Log -Message "Nuevo commit detectado. Hash: $current" -LogFile $Log
+            if ($res.ExitCode -ne 0 -or $null -eq $current) {
+                Start-Sleep -Seconds $SleepSeconds
+                continue
+            }
 
-                $df = Invoke-Git -RepoPath $Repo -GitArgs @('diff-tree','--no-commit-id','--name-only','-r','-z','--diff-filter=ACMR',$current) -LogFile $Log
+            if ($current -ne $last) {
+                $df = Invoke-GitCompat -RepoPath $Repo -GitArgs @('diff-tree','--no-commit-id','--name-only','-r','-z','--diff-filter=ACMR',$current)
                 if ($df.ExitCode -eq 0) {
-                    $files = ($df.Stdout -split "`0") | Where-Object { $_ }
+                    $files = ($df.Output -split "`0") | Where-Object { $_ }
                     foreach ($rel in $files) {
-                        $full = Join-Path -Path $Repo -ChildPath $rel
-                        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
-                        if (-not (Test-TextFile -Path $full)) { continue }
-                        foreach ($hit in (Test-FileForPatterns -FullPath $full -Patterns $patterns)) {
-                            Write-Log -Message ("Alerta: Patrón {0} encontrado en el archivo '{1}'." -f $hit, $rel) -LogFile $Log
+                        # Usar diff con --unified=0 para obtener SOLO las líneas agregadas
+                        $diff = Invoke-GitCompat -RepoPath $Repo -GitArgs @('diff',$last,$current,'--unified=0','--',$rel)
+                        if ($diff.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($diff.Output)) { continue }
+
+                        # Solo mirar líneas que empiecen con '+'
+                        $added = ($diff.Output -split "`n") | Where-Object { $_ -like '+*' -and $_ -notlike '+++*' }
+
+                        foreach ($line in $added) {
+                            foreach ($p in $patterns) {
+                                if ($p.StartsWith('regex:')) {
+                                    $rx = $p.Substring(6)
+                                    if ($line -match $rx) {
+                                        Write-Log -Message ("El demonio que monitorea $Repo detectó coincidencia de patrón regex '{0}' en el archivo '{1}'." -f $rx, $rel) -LogFile $Log
+                                    }
+                                } else {
+                                    if ($line.Contains($p)) {
+                                        Write-Log -Message ("El demonio que monitorea $Repo detectó coincidencia de patrón '{0}' en el archivo '{1}'." -f $p, $rel) -LogFile $Log
+                                    }
+                                }
+                            }
                         }
                     }
+
                 }
                 $last = $current
             }
@@ -276,7 +298,7 @@ if ($RunDaemon) {
             Start-Sleep -Seconds $SleepSeconds
         }
     } catch {
-        try { Write-Log -Message ("Error en daemon: {0}" -f $_.Exception.Message) -LogFile $Log } catch {}
+        try { Write-Log -Message ("Error en daemon para ${Repo}: {0}" -f $_.Exception.Message) -LogFile $Log } catch {}
         exit 2
     }
     return
@@ -286,7 +308,7 @@ if ($RunDaemon) {
 try {
     if ($Kill) {
         try { $Log = Get-AbsoluteFilePath -Path $Log } catch { $Log = "./audit.log" }
-        Stop-Daemon -PidFile $PidFile -LogFile $Log | Out-Null
+        Stop-Daemon -PidFile $PidFile -LogFile $Log -RepoPath $Repo | Out-Null
         return
     }
 
@@ -299,7 +321,6 @@ try {
     $Configuracion = Resolve-ExistingPath -Path $Configuracion
     $Log = Get-AbsoluteFilePath -Path $Log
 
-    # evitar segunda instancia
     if (Test-Path -LiteralPath $PidFile -PathType Leaf) {
         $raw = (Get-Content -LiteralPath $PidFile -ErrorAction SilentlyContinue) -join ""
         $SavedPid = ([regex]::Match($raw,'\d+')).Value
@@ -312,33 +333,28 @@ try {
 
     Write-Host "Iniciando el demonio en segundo plano para: $Repo (sleep=${SleepSeconds}s)"
 
-# ===== Lanzar hijo pwsh (robusto para espacios en WSL) =====
-$pwshPath = (Get-Process -Id $PID).Path
+    $scriptPath = if ($PSCommandPath) { $PSCommandPath } else { $MyInvocation.MyCommand.Path }
 
-function ConvertTo-SingleQuotedString([string]$s) {
-    # envuelve en comillas simples y escapa comillas simples internas
-    return "'" + ($s -replace "'", "''") + "'"
-}
+    function ConvertTo-SingleQuotedString([string]$s) {
+        return "'" + ($s -replace "'", "''") + "'"
+    }
 
-$cmd = @(
-    "&", (ConvertTo-SingleQuotedString $PSCommandPath),
-    "-RunDaemon",
-    "-Repo",           (ConvertTo-SingleQuotedString $Repo),
-    "-Configuracion",  (ConvertTo-SingleQuotedString $Configuracion),
-    "-Log",            (ConvertTo-SingleQuotedString $Log)
-) -join " "
+    $cmd = @(
+        "&", (ConvertTo-SingleQuotedString $scriptPath),
+        "-RunDaemon",
+        "-Repo",           (ConvertTo-SingleQuotedString $Repo),
+        "-Configuracion",  (ConvertTo-SingleQuotedString $Configuracion),
+        "-Log",            (ConvertTo-SingleQuotedString $Log)
+    ) -join " "
 
-# usamos -Command "<cadena>" para que pwsh haga el parsing correcto
-$daemonArg = @(
-    '-NoLogo','-NoProfile',
-    '-Command', $cmd
-)
+    $pwshPath = (Get-Process -Id $PID).Path
+    $argLine  = "-NoLogo -NoProfile -Command $cmd"
 
-$proc = Start-Process -FilePath $pwshPath -ArgumentList $daemonArg -PassThru
+    $proc = Start-Process -FilePath $pwshPath -ArgumentList $argLine -PassThru -WindowStyle Hidden
 
-($proc.Id).ToString() | Set-Content -LiteralPath $PidFile
-Write-Host "Demonio iniciado. PID: $($proc.Id)"
-Write-Host "Log: $Log"
+    ($proc.Id).ToString() | Set-Content -LiteralPath $PidFile
+    Write-Host "Demonio iniciado. PID: $($proc.Id)"
+    Write-Host "Log: $Log"
     return
 
 } catch {
