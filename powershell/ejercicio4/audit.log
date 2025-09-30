@@ -1,0 +1,69 @@
+[2025-09-29 20:40:35] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:40:35] Iniciando demonio para el repositorio: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/powershell/ejercicio4/repo/
+[2025-09-29 20:40:35] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:40:45] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:40:57] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:41:07] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:41:17] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:41:28] git rev-parse HEAD -> Exit 128 | ERR: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[2025-09-29 20:41:38] Nuevo commit detectado. Hash: 4632ea0744df88d59efd2254dad59918c9fd2e2a
+[2025-09-29 20:42:10] Nuevo commit detectado. Hash: 59b0bf18c60dd5d98b41ea2241bac6fa1c2e7307
+[2025-09-29 20:42:10] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón 'API_KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón '"API_KEY = "' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón 'BEGIN RSA PRIVATE KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón 'FRANCO' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón '-----BEGIN OPENSSH PRIVATE KEY-----' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón regex '\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:42:10] Alerta: Patrón regex '\b[0-9A-Fa-f]{32,}\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:48:08] Nuevo commit detectado. Hash: d97df4b0d87350868e6ff8d3648489d479719af1
+[2025-09-29 20:54:48] Nuevo commit detectado. Hash: f5a4eefac3f88a5a83533dacddf823adef8562d8
+[2025-09-29 20:54:48] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:48] Alerta: Patrón 'API_KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:48] Alerta: Patrón '"API_KEY = "' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:48] Alerta: Patrón 'BEGIN RSA PRIVATE KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:48] Alerta: Patrón 'FRANCO' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:49] Alerta: Patrón '-----BEGIN OPENSSH PRIVATE KEY-----' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:49] Alerta: Patrón regex '\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:54:49] Alerta: Patrón regex '\b[0-9A-Fa-f]{32,}\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:04] Nuevo commit detectado. Hash: 55e354cc795010267b82a35d08c6fe5fd0dae9c3
+[2025-09-29 20:56:04] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Nuevo commit detectado. Hash: 53f4a38901fb08210acafaf6b02059aab9dc49f2
+[2025-09-29 20:56:36] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón 'API_KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón '"API_KEY = "' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón 'BEGIN RSA PRIVATE KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón 'FRANCO' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón '-----BEGIN OPENSSH PRIVATE KEY-----' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón regex '\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 20:56:36] Alerta: Patrón regex '\b[0-9A-Fa-f]{32,}\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:01:26] Demonio detenido.
+[2025-09-29 21:07:01] Iniciando demonio para el repositorio: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/powershell/ejercicio4/repo/
+[2025-09-29 21:07:33] Nuevo commit detectado. Hash: 3fe08d09acefac19cd1f938aed49f0caacf2333e
+[2025-09-29 21:07:33] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:43] Nuevo commit detectado. Hash: 333ddc643b2bdc27041f3807a4999f3e6d7b3432
+[2025-09-29 21:07:44] Alerta: Patrón 'password' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón 'API_KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón '"API_KEY = "' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón 'BEGIN RSA PRIVATE KEY' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón 'FRANCO' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón '-----BEGIN OPENSSH PRIVATE KEY-----' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón regex '\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:07:44] Alerta: Patrón regex '\b[0-9A-Fa-f]{32,}\b' encontrado en el archivo 'test.txt'.
+[2025-09-29 21:08:27] Nuevo commit detectado. Hash: a76ba586e28e957e9660579938f413c3ea8562c7
+[2025-09-29 21:08:27] Alerta: Patrón 'password' encontrado en el archivo 'test copy.txt'.
+[2025-09-29 21:09:12] Demonio detenido.
