@@ -1,13 +1,13 @@
-# GRUPO 2
-
-# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
-# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
-# RUGGIERI, FRANCO
-# CROTTI, TOMÁS BENJAMÍN
-# RIVERA MAMANI, VICTOR LEONCIO
+#Grupo: 2
+#Integrantes:
+#   *CROTTI, TOMÁS
+#   *RIVERA, VICTOR
+#   *ROMBOLA, FACUNDO
+#   *RUGGIERI, FRANCO
+#   *RUGGIERO, ZOIS
 
 PAISES=()
-rutaBaseCache="." #Aca debe ir "/tmp" por criterio de correcion
+rutaBaseCache="/tmp/" #Aca debe ir "/tmp" por criterio de correcion
 ttlActual=-1
 
 function ayuda() {
@@ -37,15 +37,15 @@ function mostrarInfoPaises () {
             tiempoActual=$(date +%s) #tomo el tiempo atual
             ultimaModArch=$(stat -c %Y "$rutaCompleArchTem") #obtengo el tiempo de la ultima vez que el archivo fue editado
             if ((tiempoActual - ultimaModArch <= $ttlActual)); then #consulto si existe el archivo y veo si esta dentro del tiempo valido
-                echo "usando Archivo $rutaCompleArchTem"
-                echo "la diferencia: $(( $tiempoActual - $ultimaModArch ))"
+                #echo "usando Archivo $rutaCompleArchTem"
+                #echo "la diferencia: $(( $tiempoActual - $ultimaModArch ))"
                 jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
                 echo ""
                 continue
             fi
         fi
          #consulto a la api por que no existe o no esta dentro del tiempo valido
-        echo "usando API"
+        #echo "usando API"
         #lo guardo com un objeto, la API devuelve un array de un elemento
         respuesta=$(wget -qO- https://restcountries.com/v3.1/name/"$pais" | jq '.[0]')
         if [ -n "$respuesta" ];then

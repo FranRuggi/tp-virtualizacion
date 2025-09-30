@@ -1,0 +1,10 @@
+2025-09-30 17:00:01 app[web]: GET /index.html 200 45ms
+2025-09-30 17:00:05 app[api]: POST /login 401 Unauthorized - invalid credentials
+2025-09-30 17:00:10 db[postgres]: ERROR: duplicate key value violates unique constraint
+2025-09-30 17:00:15 app[web]: GET /dashboard 500 Internal Server Error
+2025-09-30 17:00:20 app[auth]: invalid password for user admin
+2025-09-30 17:00:25 kernel: usb 1-1: USB disconnect, device number 2
+2025-09-30 17:00:30 systemd: Started Daily Cleanup of Temporary Directories.
+2025-09-30 17:00:35 app[api]: GET /users 200 OK
+2025-09-30 17:00:40 sshd[4567]: Invalid user from 192.168.1.55
+2025-09-30 17:00:45 app[auth]: warning: multiple invalid login attempts

@@ -1,0 +1,4 @@
+## Informe de análisis de red de transporte
+**Hub(s) de la red** (grado=3):
+  - Estación 2
+  - Estación 3
