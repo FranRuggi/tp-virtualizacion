@@ -39,6 +39,10 @@ pwsh ./ejercicio4.ps1 -Repo ./repo -Kill
 
 .NOTES
 Requiere 'git' en PATH. Compatible con Windows PowerShell 5.1 y PowerShell 7+ (WSL/Windows).
+⚠️ Recomendado: PowerShell 7.1 o superior. 
+Si se usa una versión anterior, en la línea
+    $proc = Start-Process -FilePath $pwshPath -ArgumentList $argLine -PassThru
+debe agregarse -WindowStyle Hidden.
 #>
 
 [CmdletBinding()]
@@ -77,6 +81,8 @@ Uso:
 Descripción:
   Daemon que monitorea el repo y escanea archivos cambiados por patrones sensibles.
   Intervalo fijo: ${SleepSeconds}s.
+  ⚠️ Recomendado: PowerShell 7.1 o superior. 
+     En versiones más viejas, en la línea con Start-Process debe agregarse -WindowStyle Hidden.
 
 Parámetros:
   -Repo <ruta_repo>           Obligatorio (Git repo)
@@ -89,6 +95,7 @@ patterns.conf (ejemplos):
   # comentarios
   password=
   regex:\bAKIA[0-9A-Z]{16}\b
+
 "@ | Write-Host
 }
 if ($Help) { Show-Usage; return }
@@ -358,7 +365,7 @@ try {
     $pwshPath = (Get-Process -Id $PID).Path
     $argLine  = "-NoLogo -NoProfile -Command $cmd"
 
-    $proc = Start-Process -FilePath $pwshPath -ArgumentList $argLine -PassThru -WindowStyle Hidden
+    $proc = Start-Process -FilePath $pwshPath -ArgumentList $argLine -PassThru
 
     ($proc.Id).ToString() | Set-Content -LiteralPath $PidFile
     Write-Host "Demonio iniciado. PID: $($proc.Id)"

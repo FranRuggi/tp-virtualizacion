@@ -1,0 +1,4 @@
+def enviar_correo():
+    destinatario = "usuario@example.com"
+    asunto = "Prueba de regex"
+    print("Correo enviado a", destinatario)
