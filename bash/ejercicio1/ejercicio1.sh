@@ -51,8 +51,8 @@ REQUISITOS:
   • Los archivos de entrada se leen desde un directorio dado.
 
 USO:
-  $0 -d|--directorio <directorio>   [-a|--archivo <archivo> | -p|--pantalla]
-  $0 -h|--help
+  ./ejercicio1.sh -d|--directorio <directorio>   [-a|--archivo <archivo> | -p|--pantalla]
+  ./ejercicio1.sh -h|--help
 
 PARÁMETROS:
   -d, --directorio   Directorio con archivos de encuestas (obligatorio).
@@ -62,10 +62,10 @@ PARÁMETROS:
 
 EJEMPLOS:
   # Procesar encuestas y ver resultado por pantalla
-  $0 --directorio ./datos --pantalla
+  ./ejercicio1.sh -d ArchivosPrueba1 -p
 
   # Procesar encuestas y guardar en un JSON
-  $0 -d ./datos -a salida.json
+  ./ejercicio1.sh -d ArchivosPrueba3 -a SalidaPromedios/PromedioPrueba3.txt
 
 EOF
   exit 0

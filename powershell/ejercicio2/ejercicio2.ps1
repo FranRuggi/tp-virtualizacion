@@ -52,7 +52,7 @@ param(
     [Alias('m')][string] $Matriz,
     [Alias('s')][string] $Separador = '|',
     [Alias('c')][switch] $Camino,
-    [switch] $Hub,
+    [Alias('h')][switch] $Hub,
     [switch] $Help
 )
 
@@ -65,8 +65,16 @@ Analiza una red de transporte modelada como matriz de adyacencia.
 
 USO:
   ./ejercicio2.ps1 -Matriz <archivo> [-Separador <caracter>] (-Camino | -Hub)
-  ./ejercicio2.ps1 -H
+  
+  #Abrir esta ayuda
+  ./ejercicio2.ps1 -Help
 
+EJEMPLOS:
+  #Determinar HUB (Modificando el separador a necesidad del archivo)
+  ./ejercicio2.sh -m MatricesPrueba/matrizPrueba3.txt -h -s "/"
+
+  #Calcular el recorrido minimo que visite todas las estaciones
+  ./ejercicio2.sh -m MatricesPrueba/matrizPrueba3.txt -c -s "/"
 
 "@ | Write-Output
     exit 0

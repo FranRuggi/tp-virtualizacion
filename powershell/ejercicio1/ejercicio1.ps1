@@ -34,15 +34,15 @@ Muestra los resultados por pantalla en lugar de generar un archivo. Excluyente c
 Muestra la ayuda del script y finaliza la ejecución.
 
 .EXAMPLE
-.\ej1.ps1 -Directorio "C:\Encuestas" -Archivo "resultados.json"
-Procesa los archivos de C:\Encuestas y guarda los resultados en resultados.json
+./ejercicio1.ps1 -Directorio ./ArchivosPrueba3 -Archivo ./SalidaPromedios/PromedioPrueba3.txt
+Procesa los archivos de ./ArchivosPrueba3 y guarda los resultados en PromedioPrueba3.txt
 
 .EXAMPLE
-.\ej1.ps1 -Directorio "C:\Encuestas" -Pantalla
+./ejercicio1.ps1 -Directorio "C:\Encuestas" -Pantalla
 Procesa los archivos de C:\Encuestas y muestra los resultados en pantalla.
 
 .EXAMPLE
-.\ej1.ps1 -Help
+./ejercicio1.ps1 -Help
 Muestra la ayuda del script.
 
 #>
@@ -66,8 +66,15 @@ Calcula:
   • Promedio de nota de satisfacción por fecha y canal
 
 USO:
-  .\ej1.ps1 -Directorio <directorio> [-Archivo <salida.json> | -Pantalla]
-  .\ej1.ps1 -Help
+  ./ejercicio1.ps1 -Directorio <directorio> [-Archivo <salida.json> | -Pantalla]
+  ./ejercicio1.ps1 -Help
+
+EJEMPLOS:
+  # Procesar encuestas y ver resultado por pantalla
+  ./ejercicio1.ps1 -Directorio ./ArchivosPrueba3 -Pantalla
+
+  # Procesar encuestas y guardar en un JSON
+  ./ejercicio1.ps1 -Directorio ./ArchivosPrueba3 -Archivo ./SalidaPromedios/PromedioPrueba3.txt
 
 Parámetros:
   -Directorio  Directorio con archivos de encuestas (obligatorio).

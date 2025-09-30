@@ -322,8 +322,18 @@ REQUISITOS:
   • La matriz debe ser cuadrada, simétrica y numérica (pesos no negativos).
 
 USO:
-  script -m|--matriz <archivo> [-s|--separador <caracter>] (-c|--camino | -h|--hub)
-  script -H | --help
+
+  ./ejercicio2.sh -m|--matriz <archivo> [-s|--separador <caracter>] (-c|--camino | -h|--hub)
+  
+  #Para leer esta ayuda
+  ./ejercicio2.sh -H | --help
+
+EJEMPLOS:
+  #Determinar HUB (Modificando el separador a necesidad del archivo)
+  ./ejercicio2.sh -m MatricesPrueba/matrizPrueba3.txt -h -s "/"
+
+  #Calcular el recorrido minimo que visite todas las estaciones
+  ./ejercicio2.sh -m MatricesPrueba/matrizPrueba3.txt -c -s "/"
 
 PARÁMETROS:
   -m, --matriz      Archivo de la matriz (obligatorio).
