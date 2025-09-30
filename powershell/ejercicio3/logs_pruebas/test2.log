@@ -1,0 +1,25 @@
+2025-09-30 17:00:01 app[Web]: GET /index.html 200 45ms
+2025-09-30 17:00:05 app[api]: POST /login 401 Unauthorized - invalid credentials
+2025-09-30 17:00:10 kernel: usb 1-1: device descriptor read/64, error -32
+2025-09-30 17:00:15 sshd[1234]: Invalid user admin from 192.168.1.10
+2025-09-30 17:00:20 app[Web]: GET /dashboard 200 67ms
+2025-09-30 17:00:25 kernel: disk0: read error at sector 2048
+2025-09-30 17:00:30 sshd[1234]: Invalid password for root
+2025-09-30 17:00:35 app[api]: POST /purchase 500 Internal Server Error
+2025-09-30 17:00:40 kernel: usb 2-1: device unplugged
+2025-09-30 17:00:45 app[Web]: GET /logout 302 Redirect
+2025-09-30 17:00:50 sshd[1234]: Connection closed by 192.168.1.11
+2025-09-30 17:00:55 app[api]: POST /login 200 Success
+2025-09-30 17:01:00 kernel: network interface eth0 up
+2025-09-30 17:01:05 sshd[1234]: Invalid user guest from 192.168.1.12
+2025-09-30 17:01:10 app[Web]: GET /profile 200 80ms
+2025-09-30 17:01:15 kernel: CPU temperature high: 90C
+2025-09-30 17:01:20 sshd[1234]: Invalid attempt detected
+2025-09-30 17:01:25 app[api]: POST /payment 200 OK
+2025-09-30 17:01:30 kernel: usb 3-2: device plugged in
+2025-09-30 17:01:35 app[Web]: GET /settings 200 55ms
+2025-09-30 17:01:40 sshd[1234]: Invalid password for user test
+2025-09-30 17:01:45 app[api]: POST /upload 413 Payload Too Large
+2025-09-30 17:01:50 kernel: memory check complete
+2025-09-30 17:01:55 sshd[1234]: Invalid login attempt detected
+2025-09-30 17:02:00 app[Web]: GET /help 200 77ms

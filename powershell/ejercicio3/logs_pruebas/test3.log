@@ -1,0 +1,20 @@
+2025-09-30 18:00:01 app[DB]: Connection to database established
+2025-09-30 18:00:05 app[DB]: Query failed: syntax error near 'SELECT'
+2025-09-30 18:00:10 app[backup]: Backup started for volume /dev/sda1
+2025-09-30 18:00:15 app[backup]: Backup completed successfully
+2025-09-30 18:00:20 app[DB]: Connection timeout after 30s
+2025-09-30 18:00:25 app[Web]: GET /products 200 123ms
+2025-09-30 18:00:30 app[DB]: Deadlock detected on transaction 567
+2025-09-30 18:00:35 kernel: low memory warning
+2025-09-30 18:00:40 app[backup]: Backup failed: insufficient disk space
+2025-09-30 18:00:45 app[DB]: Database restarted after crash
+2025-09-30 18:00:50 app[Web]: GET /cart 200 95ms
+2025-09-30 18:00:55 app[DB]: Warning: slow query execution (12s)
+2025-09-30 18:01:00 kernel: disk1: write error at sector 4096
+2025-09-30 18:01:05 app[backup]: Backup started for volume /dev/sdb1
+2025-09-30 18:01:10 app[backup]: Backup failed: permission denied
+2025-09-30 18:01:15 app[DB]: Connection to database lost
+2025-09-30 18:01:20 app[DB]: Transaction committed successfully
+2025-09-30 18:01:25 app[backup]: Backup completed successfully
+2025-09-30 18:01:30 kernel: CPU usage warning: 95%
+2025-09-30 18:01:35 app[DB]: Error: index out of bounds
