@@ -1,0 +1,6 @@
+# Este sí debería disparar varias alertas
+password = "12345"
+API_KEY = "XYZ-998"
+my_secret = "ultra"
+token = "ABCD"
+secret

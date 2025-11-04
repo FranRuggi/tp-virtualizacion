@@ -80,63 +80,53 @@ is_text_file() {
 }
 
 # =============== Núcleo ===============
+monitor_poll() { 
+    local watch_path="$1" config_path="$2" log_file="$3" sleep_secs="${4:-10}"
+    local patterns; patterns=$(validate_patterns "$config_path") || {
+        log_message "No se encontraron patrones válidos. Saliendo." "$log_file"; return 1; }
 
-scan_repo() {
-    local repo_path="$1" config_path="$2" log_file="$3" sleep_secs="$4"
-
-    exec 2>>"$log_file"
-    log_message "Iniciando demonio para el repositorio: $repo_path" "$log_file"
-
-    local patterns
-    if ! patterns=$(validate_patterns "$config_path"); then
-        log_message "No se encontraron patrones válidos. Finalizando demonio." "$log_file"
-        return 1
-    fi
-
-    # Arrancar “desde ahora”: no procesar el commit presente al inicio
-    local last_scanned_commit
-    last_scanned_commit=$(git -C "$repo_path" rev-parse HEAD 2>/dev/null || printf "")
+    declare -A MTIME
+    # índice inicial
+    while IFS= read -r -d '' f; do
+        MTIME["$f"]="$(stat -c %Y -- "$f" 2>/dev/null || echo 0)"
+    done < <(find "$watch_path" -type f -print0)
 
     while true; do
-        local current_commit
-        if ! current_commit=$(git -C "$repo_path" rev-parse HEAD 2>/dev/null); then
-            sleep "$sleep_secs"
-            continue
-        fi
+        while IFS= read -r -d '' f; do
+            local new="$(stat -c %Y -- "$f" 2>/dev/null || echo 0)"
+            local old="${MTIME["$f"]:-0}"
+            if [[ "$new" -gt "$old" ]]; then
+                MTIME["$f"]="$new"
+                is_text_file "$f" || continue
+                local rel="${f#$watch_path/}"
 
-        if [[ "$current_commit" != "$last_scanned_commit" ]]; then
-            log_message "Nuevo commit detectado en el repositorio. Hash: $current_commit" "$log_file"
-
-            # Archivos de ese commit (A/C/M/R), NUL-safe, sin variables intermedias
-            git -C "$repo_path" diff-tree --no-commit-id --name-only -r -z --diff-filter=ACMR "$current_commit" 2>/dev/null \
-            | while IFS= read -r -d '' file; do
-                local full_path="$repo_path/$file"
-                [[ -f "$full_path" ]] || continue
-                is_text_file "$full_path" || continue
-
-                # Evaluar patrones
                 while IFS= read -r pattern; do
                     [[ -z "$pattern" ]] && continue
                     if [[ "$pattern" == regex:* ]]; then
-                        local regex_pattern="${pattern#regex:}"
-                        if grep -Eq -- "$regex_pattern" "$full_path"; then
-                            log_message "Alerta: Patrón regex '$regex_pattern' encontrado en el archivo '$file'." "$log_file"
+                        local rg="${pattern#regex:}"
+                        if grep -Eq -- "$rg" "$f"; then
+                            log_message "Alerta: Patrón regex '$rg' encontrado en el archivo '$rel'." "$log_file"
                         fi
                     else
-                        if grep -Fq -- "$pattern" "$full_path"; then
-                            log_message "Alerta: Patrón '$pattern' encontrado en el archivo '$file'." "$log_file"
+                        if grep -Fwq -- "$pattern" "$f"; then
+                            log_message "Alerta: Patrón '$pattern' encontrado en el archivo '$rel'." "$log_file"
                         fi
                     fi
                 done <<< "$patterns"
-            done
-
-            # Marcar como procesado
-            last_scanned_commit="$current_commit"
-        fi
-
+            fi
+        done < <(find "$watch_path" -type f -print0)
         sleep "$sleep_secs"
     done
 }
+start_daemon() { 
+    local repo_path="$1" config_path="$2" log_file="$3" sleep_secs="$4"
+
+    exec 2>>"$log_file"
+    log_message "Iniciando demonio. Directorio monitoreado: $repo_path" "$log_file"
+    monitor_poll "$repo_path" "$config_path" "$log_file" "$sleep_secs"
+
+}
+
 
 stop_daemon() {
     local pid_file="$1" log_file="$2"
@@ -165,7 +155,7 @@ main() {
     CONFIG_PATH=""
     LOG_FILE="./audit.log"
     KILL_FLAG=false
-    SLEEP_SECONDS=10
+    SLEEP_SECONDS=5
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
@@ -208,8 +198,6 @@ main() {
     if [[ -z "$REPO_PATH" || -z "$CONFIG_PATH" ]]; then
         printf "Error: Se requieren los parámetros -r y -c.\n" >&2; return 1
     fi
-    [[ -d "$REPO_PATH/.git" ]] || { printf "Error: '%s' no es un repositorio Git válido.\n" "$REPO_PATH" >&2; return 1; }
-
     if [[ -f "$pid_file" ]]; then
         local pid; pid=$(cat "$pid_file" 2>/dev/null)
         if [[ -n "$pid" && "$pid" =~ ^[0-9]+$ ]] && ps -p "$pid" > /dev/null 2>&1; then
@@ -221,7 +209,7 @@ main() {
     fi
 
     printf "Iniciando el demonio en segundo plano para: %s (sleep=%ss)\n" "$REPO_PATH" "$SLEEP_SECONDS"
-    scan_repo "$REPO_PATH" "$CONFIG_PATH" "$LOG_FILE" "$SLEEP_SECONDS" &
+    start_daemon "$REPO_PATH" "$CONFIG_PATH" "$LOG_FILE" "$SLEEP_SECONDS" &
     local daemon_pid=$!
     printf "%s\n" "$daemon_pid" > "$pid_file"
     printf "Demonio iniciado. PID: %s\nLog: %s\n" "$daemon_pid" "$LOG_FILE"

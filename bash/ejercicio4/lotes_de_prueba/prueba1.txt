@@ -1,4 +1,2 @@
-# función para conectar a la base de datos
-password = "1234"
-print("Conexión establecida")
-return True
+"let API_KEY = 'XYZ-123';"
+"db_password=supersecreto"

@@ -1,0 +1,79 @@
+[2025-11-04 12:41:10] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+[2025-11-04 12:41:10] Backend: polling (sin inotify)
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:42:03] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:43:48] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+[2025-11-04 12:43:48] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:44:09] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+[2025-11-04 12:44:09] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:44:41] Alerta: Patrón 'secret' encontrado en el archivo 'prueba2.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:46:52] Demonio detenido.
+[2025-11-04 12:46:58] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+[2025-11-04 12:46:58] Backend: inotify
+[2025-11-04 12:49:27] Demonio detenido.
+[2025-11-04 12:49:30] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+grep: --: No such file or directory
+[2025-11-04 12:49:41] Alerta: Patrón 'password' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+[2025-11-04 12:49:41] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+[2025-11-04 12:49:41] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 12:53:21] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+grep: --: No such file or directory
+grep: --: No such file or directory
+[2025-11-04 13:00:51] Demonio detenido.
+[2025-11-04 13:01:05] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+[2025-11-04 13:01:22] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:01:32] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:01:32] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:08:34] Demonio detenido.
+[2025-11-04 13:08:36] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+[2025-11-04 13:09:15] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:09:30] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:09:30] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:09:51] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:09:51] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:11:00] Alerta: Patrón 'password' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:11:00] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:11:00] Alerta: Patrón regex '^.*API_KEY\s*=\s*['"].*['"].*$' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:11:31] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:12:09] Demonio detenido.
+[2025-11-04 13:12:11] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+grep: warning: ? at start of expression
+grep: warning: ? at start of expression
+[2025-11-04 13:12:58] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: warning: ? at start of expression
+[2025-11-04 13:13:35] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+grep: warning: ? at start of expression
+[2025-11-04 13:13:38] Demonio detenido.
+[2025-11-04 13:13:39] Iniciando demonio. Directorio monitoreado: /mnt/c/Users/Fran_/OneDrive - Universidad Nacional de la Matanza/2Q2025/2. Virtualizacion de Hardware/bash/tp-virtualizacion/bash/ejercicio4/lotes_de_prueba
+[2025-11-04 13:13:46] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:14:55] Alerta: Patrón 'password' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:14:55] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:15:15] Alerta: Patrón 'password' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:15:15] Alerta: Patrón 'API_KEY' encontrado en el archivo 'text.txt'.
+[2025-11-04 13:15:15] Alerta: Patrón 'secret' encontrado en el archivo 'text.txt'.
