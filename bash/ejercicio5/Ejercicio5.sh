@@ -7,7 +7,7 @@
 #   *RUGGIERO, ZOIS
 
 PAISES=()
-rutaBaseCache="/tmp/" #Aca debe ir "/tmp" por criterio de correcion
+rutaBaseCache="./" #Aca debe ir "/tmp" por criterio de correcion
 ttlActual=-1
 
 function ayuda() {
@@ -32,29 +32,38 @@ function ayuda() {
 
 function mostrarInfoPaises () {
     for pais in "${PAISES[@]}";do
-        rutaCompleArchTem="$rutaBaseCache/$pais.json" #armo la ruta final
-        if [ -f "$rutaCompleArchTem" ]; then #veo si existe el archivo
-            tiempoActual=$(date +%s) #tomo el tiempo atual
-            ultimaModArch=$(stat -c %Y "$rutaCompleArchTem") #obtengo el tiempo de la ultima vez que el archivo fue editado
-            if ((tiempoActual - ultimaModArch <= $ttlActual)); then #consulto si existe el archivo y veo si esta dentro del tiempo valido
-                #echo "usando Archivo $rutaCompleArchTem"
-                #echo "la diferencia: $(( $tiempoActual - $ultimaModArch ))"
-                jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
+        rutaCompleArchTem="$rutaBaseCache/$pais.json"
+
+        if [ -f "$rutaCompleArchTem" ]; then
+            tiempoActual=$(date +%s)
+            timestamp=$(jq '.timestamp' "$rutaCompleArchTem")
+            ttlGuardado=$(jq '.ttl' "$rutaCompleArchTem")
+
+            # Si timestamp y ttl existen y el TTL sigue vigente
+            if (( tiempoActual - timestamp <= ttlGuardado )); then
+                jq -r '.data | "País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
                 echo ""
                 continue
             fi
         fi
-         #consulto a la api por que no existe o no esta dentro del tiempo valido
-        #echo "usando API"
-        #lo guardo com un objeto, la API devuelve un array de un elemento
-        respuesta=$(wget -qO- https://restcountries.com/v3.1/name/"$pais" | jq '.[0]')
-        if [ -n "$respuesta" ];then
-            echo "$respuesta" > "$rutaCompleArchTem"
-            echo "$respuesta" | jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"'
+
+        # Si no existe cache o expiró → consultamos API
+        respuesta=$(wget -qO- "https://restcountries.com/v3.1/name/$pais" | jq '.[0]')
+
+        if [ -n "$respuesta" ]; then
+            tiempoActual=$(date +%s)
+
+            # Construimos objeto cache con timestamp y ttl
+            jq -n --argjson data "$respuesta" --arg ttl "$ttlActual" --arg ts "$tiempoActual" \
+            '{ timestamp: ($ts|tonumber), ttl: ($ttl|tonumber), data: $data }' \
+            > "$rutaCompleArchTem"
+
+            # Mostramos la info
+            jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' <<< "$respuesta"
         else
-            echo "Error al obtener informacion del pais: $pais"
+            echo "Error al obtener información del país: $pais"
         fi
-        #jq -r '"País: \(.name.common)\nCapital: \(.capital[0])\nRegión: \(.region)\nPoblación: \(.population)\nMoneda: \(.currencies | to_entries[] | .value.name)"' "$rutaCompleArchTem"
+
         echo ""
     done
 }

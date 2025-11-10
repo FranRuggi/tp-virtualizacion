@@ -32,17 +32,20 @@ if ($ttl -lt 0) {
     exit 1
 }
 #Defino la ruta global donde almacena la cache de registros, las consideraciones indican que debe ir en /tmp
-$rutaDestino="/tmp/"#"/tmp"
+$rutaDestino="."#"/tmp"
 function VerInfoPais{
     Param(
         [string]$origen
     )
-    $datos = Get-Content $origen -Raw | ConvertFrom-Json
+    $jsonRespuesta = Get-Content $origen -Raw | ConvertFrom-Json
+    $datos = $jsonRespuesta.data
     Write-Output "País: $($datos.name.common)"
     Write-Output "Capital: $($datos.capital[0])"
     Write-Output "Región: $($datos.region)"
     Write-Output "Población: $($datos.population)"
-    Write-Output "Moneda: $($datos.currencies.($datos.currencies.PSObject.Properties.Name).name)"
+    $monedaKey = $datos.currencies.PSObject.Properties.Name
+    $nombreMoneda = $datos.currencies.$monedaKey.name
+    Write-Output "Moneda: $nombreMoneda"
 }
 function ConsultarInfoPais {
     Param (
@@ -51,16 +54,22 @@ function ConsultarInfoPais {
     )
     $nomArchivo="$pais.json"
     $rutaCompleta="$rutaDestino/$nomArchivo"
+    $tiempoActual = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     if( Test-Path "$rutaCompleta" ){
-        $tiempoActual = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-        $tiempoUltMod = ([System.DateTimeOffset](Get-Item $rutaCompleta).LastWriteTime).ToUnixTimeSeconds()
-        if( $tiempoActual - $tiempoUltMod -le $ttlMax ){
+        $datosPais = Get-Content $rutaCompleta | ConvertFrom-Json
+        if( $tiempoActual - $datosPais.timestamp  -le $datosPais.ttl ){
             VerInfoPais $rutaCompleta
             return
         }
     }
     try{
-        $(Invoke-WebRequest -Uri "https://restcountries.com/v3.1/name/$pais").Content | ConvertFrom-Json | Select-Object -First 1 | ConvertTo-Json -Depth 10 | Out-File -FilePath $rutaCompleta
+        $respuestaApi = Invoke-WebRequest -Uri "https://restcountries.com/v3.1/name/$pais" | Select-Object -ExpandProperty Content | ConvertFrom-Json | Select-Object -First 1
+        $jsonFinal = [PSCustomObject]@{
+            timestamp = $tiempoActual #el tiempo en el que fue creado para validar con su ttl
+            ttl = $ttlMax #el ttl que va a durar la validez del archivo a partir de cuando fue creado
+            data = $respuestaApi
+        }
+        $jsonFinal | ConvertTo-Json -Depth 10 | Out-File $rutaCompleta
         VerInfoPais $rutaCompleta
     }
     catch{
