@@ -1,0 +1,21 @@
+config_var = "init"
+const API_KEY = "A1B2-SECRET-CODE-99"
+user_login_password = password
+
+
+Contacto de soporte:
+admin_sys@empresa-segura.com
+
+conf:
+secretToken: XyZ_987654321_AbC
+
+
+Authorization: Bearer
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+
+# Credenciales AWS (AKIA + 16 caracteres)
+access_id = AKIAIOSFODNN7EXAMPLE
+
+# Session Hash (32 caracteres hexadecimales)
+session_id = 5e884898da28047151d0e56f8dc629279
