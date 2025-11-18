@@ -1,3 +1,10 @@
+# GRUPO 2
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
+
 <#
 .SYNOPSIS
    Este comando obtendra informacion de paises mediante una API publica.

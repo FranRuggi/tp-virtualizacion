@@ -1,4 +1,3 @@
-#!/usr/bin/env pwsh
 # GRUPO 2
 
 # RUGGIERO BELLONE, ZOIS ANDRES UZIEL
