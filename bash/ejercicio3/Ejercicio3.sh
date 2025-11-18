@@ -1,17 +1,8 @@
-# GRUPO 2
-
-# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
-# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
-# RUGGIERI, FRANCO
-# CROTTI, TOMÁS BENJAMÍN
-# RIVERA MAMANI, VICTOR LEONCIO
-
 #!/bin/bash
 
 # Uso:
 #   ./contar_eventos.sh -d /ruta/a/logs -p "usb,invalid"
 
-# --- 1. Parseo de parámetros ---
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -d|--directorio)
@@ -29,19 +20,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# --- 2. Validar parámetros obligatorios ---
 if [[ -z "$DIR" || -z "$PALABRAS" ]]; then
   echo "Error: Faltan parámetros. Uso: $0 -d <directorio o archivo .log> -p <palabras>"
   exit 1
 fi
 
-# --- 3. Validar que las palabras no estén vacías ni sean solo espacios ---
 if [[ -z "${PALABRAS// /}" ]]; then
     echo "Error: El parámetro -p/--palabras no puede estar vacío ni ser solo espacios."
     exit 1
 fi
 
-# --- 4. Validar palabras separadas por coma ---
 if [[ "$PALABRAS" != *","* && "$PALABRAS" != *"," ]]; then
   if [[ "$PALABRAS" == *" "* ]]; then
     echo "Error: Las palabras clave deben ir separadas por coma. Ej: usb,invalid"
@@ -49,9 +37,7 @@ if [[ "$PALABRAS" != *","* && "$PALABRAS" != *"," ]]; then
   fi
 fi
 
-# --- 5. Validar directorio/archivo ---
 if [[ -d "$DIR" ]]; then
-    # Es un directorio
     FILES=( "$DIR"/*.log )
     NUM_FILES=${#FILES[@]}
     
@@ -62,9 +48,8 @@ if [[ -d "$DIR" ]]; then
         echo "Error: Hay más de un archivo .log en el directorio $DIR. No se puede procesar."
         exit 1
     fi
-    FILES="${FILES[0]}"  # Solo un archivo, lo procesamos
+    FILES="${FILES[0]}"
 elif [[ -f "$DIR" ]]; then
-    # Es un archivo. Comprobar extensión .log
     if [[ "$DIR" != *.log ]]; then
         echo "Error: El archivo especificado no tiene extensión .log"
         exit 1
@@ -75,31 +60,40 @@ else
     exit 1
 fi
 
-# --- 6. Convertir palabras clave a minúsculas para búsqueda case-insensitive ---
+# Convertir palabras a minúsculas y a espacios (awk las splittea)
 KEYWORDS=$(echo "$PALABRAS" | tr '[:upper:]' '[:lower:]' | tr ',' ' ')
 
-# --- 7. Procesar con awk ---
+# AWK actualizado: usa gsub para contar todas las ocurrencias por línea
 awk -v words="$KEYWORDS" '
+# Función para escapar metacaracteres de regex en la palabra
+function escape_regex(s,   esc) {
+    esc = s
+    # escapamos caracteres que tienen significado en regex
+    gsub(/[][\.^$*+?(){}|\\\/]/, "\\\\&", esc)
+    return esc
+}
 BEGIN {
-    n=split(words, keys, " ");
+    n = split(words, keys, " ")
     for (i=1; i<=n; i++) {
-        counts[keys[i]]=0;
+        counts[keys[i]] = 0
+        patterns[i] = escape_regex(keys[i])    # patrón escapado
+        # Si querés buscar solo palabras completas (no subcadenas), usá:
+        # patterns[i] = "(^|[^[:alnum:]_])" escape_regex(keys[i]) "([^[:alnum:]_]|$)"
+        # y luego usar gsub(patterns[i], "&", line)
     }
 }
 {
-    line=tolower($0);
+    line = tolower($0)
     for (i=1; i<=n; i++) {
-        if (index(line, keys[i])) {
-            counts[keys[i]]++;
-        }
+        # gsub devuelve el número de sustituciones (ocurrencias no solapadas)
+        occ = gsub(patterns[i], "&", line)
+        counts[keys[i]] += occ
     }
 }
 END {
     printf "Conteo por palabra:\n"
     for (i=1; i<=n; i++) {
-        printf "%s: %d\n", keys[i], counts[keys[i]];
+        printf "%s: %d\n", keys[i], counts[keys[i]]
     }
 }
 ' "$FILES"
-
-
