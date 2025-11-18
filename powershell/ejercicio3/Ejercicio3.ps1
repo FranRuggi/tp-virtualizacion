@@ -1,5 +1,11 @@
 #!/usr/bin/env pwsh
+# GRUPO 2
 
+# RUGGIERO BELLONE, ZOIS ANDRES UZIEL
+# ROMBOLÁ FIGUEROA, FACUNDO AGUSTÍN
+# RUGGIERI, FRANCO
+# CROTTI, TOMÁS BENJAMÍN
+# RIVERA MAMANI, VICTOR LEONCIO
 param(
     [Alias("d")] [Parameter(Mandatory=$true)] [string]$Directorio,
     [Alias("p")] [Parameter(Mandatory=$true)] [string]$Palabras,

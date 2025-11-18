@@ -10,4 +10,7 @@ def generar_token(usuario):
 
 print("Inicio del programa")
 usuario = "admin@example.com"
-jwt = generar_token(usuario)
+jwt = generar_token(usuario)password
+
+
+

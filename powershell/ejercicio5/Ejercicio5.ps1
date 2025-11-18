@@ -20,8 +20,6 @@
    el ttl, se usara la informacion de ese archivo, caso contrario se consultara a la API.
 
 .NOTES
-   Autor: Víctor
-   Fecha: 2025-09-11
 #>
 Param(
     [Parameter(Mandatory=$True)] [string[]]$nombre,
