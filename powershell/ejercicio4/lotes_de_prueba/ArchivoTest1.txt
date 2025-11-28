@@ -1,0 +1,7 @@
+config_var = "init"
+const API_KEY = "A1B2-SECRET-CODE-99"
+user_login_password = password
+
+
+Contacto de soporte:
+admin_sys@empresa-segura.com

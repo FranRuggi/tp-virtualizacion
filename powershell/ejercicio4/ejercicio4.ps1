@@ -10,54 +10,49 @@
     Monitor de archivos en segundo plano (Demonio) que busca patrones prohibidos.
 
 .DESCRIPTION
-    Este script implementa un servicio de monitoreo (daemon) compatible con Windows y Linux/WSL.
-    Supervisa recursivamente un directorio específico detectando la creación o modificación de archivos.
-    Si el contenido de un archivo coincide con alguno de los patrones definidos en la configuración,
-    se genera una alerta en el archivo de log especificado.
+    Servicio de monitoreo (daemon) que:
+    - Supervisa recursivamente un directorio.
+    - Ante creación/modificación de archivos, busca patrones definidos.
+    - Registra alertas en un archivo de log.
 
-    Características principales:
-    - Ejecución en segundo plano (detached) usando nohup/Start-Process.
-    - Soporte para Texto plano y Expresiones Regulares (prefijo 'regex:').
-    - Log con escritura concurrente (FileShare.ReadWrite) y auto-recuperación.
-    - Bajo consumo de recursos (Event-driven con FileSystemWatcher).
+    Implementado como:
+    - Job de PowerShell (Start-Job).
+    - FileSystemWatcher + Register-ObjectEvent.
+    - Log con escritura concurrente.
 
 .PARAMETER Repo
-    (Alias: -r) Ruta del directorio que se va a monitorear recursivamente.
+    (Alias: -r) Ruta del directorio a monitorear recursivamente.
 
 .PARAMETER Configuracion
-    (Alias: -c) Ruta del archivo que contiene los patrones a buscar.
-    Formato del archivo:
-    - Una palabra por línea para búsqueda exacta.
-    - Usar 'regex:' al inicio para expresiones regulares (ej: regex:^COD_\d{4}).
+    (Alias: -c) Archivo de patrones:
+        - Una palabra por línea => texto exacto.
+        - 'regex:<expresión>' => expresión regular.
 
 .PARAMETER Log
-    (Alias: -l) Ruta del archivo donde se escribirán las auditorías y alertas.
+    (Alias: -l) Archivo donde se escriben auditorías y alertas.
 
 .PARAMETER Kill
-    (Alias: -k) Interruptor para DETENER el demonio asociado al repositorio indicado.
-
-.PARAMETER DaemonMode
-    (Interno) Switch utilizado por el script para ejecutarse en segundo plano. No usar manualmente.
+    (Alias: -k) Detiene el demonio asociado al repositorio indicado.
 
 .EXAMPLE
-    Lanzar el monitoreo:
     ./ejercicio4.ps1 -r ./lotes_de_prueba -c ./patterns.conf -l ./audit.log
 
 .EXAMPLE
-    Detener el monitoreo:
     ./ejercicio4.ps1 -k -r ./lotes_de_prueba
-
-.NOTES
-    Versión: Final Optimizada (WSL/Concurrency Support)
-    Fecha: Noviembre 2025
 #>
 
 param(
-    [Alias('r')][string]$Repo,
-    [Alias('c')][string]$Configuracion,
-    [Alias('l')][string]$Log,
-    [Alias('k')][switch]$Kill,
-    [switch]$DaemonMode
+    [Alias('r')]
+    [string]$Repo,
+
+    [Alias('c')]
+    [string]$Configuracion,
+
+    [Alias('l')]
+    [string]$Log,
+
+    [Alias('k')]
+    [switch]$Kill
 )
 
 function Get-AbsolutePath {
@@ -66,207 +61,235 @@ function Get-AbsolutePath {
     return (Resolve-Path $Path -ErrorAction SilentlyContinue).Path
 }
 
-# ==========================================
+# ================================
 # MODO KILL (-k)
-# ==========================================
+# ================================
 if ($Kill) {
     if ([string]::IsNullOrEmpty($Repo)) {
-        Write-Host "❌ Error: El parámetro -kill requiere -repo." -ForegroundColor Red; exit 1
+        Write-Host "❌ Error: El parámetro -kill requiere -repo." -ForegroundColor Red
+        exit 1
     }
+
     $RepoToCheck = Get-AbsolutePath $Repo
-    if (-not $RepoToCheck) { Write-Host "❌ El directorio no existe." -ForegroundColor Red; exit 1 }
-    
-    $PidFile  = Join-Path $RepoToCheck ".ejercicio4.pid"
+    if (-not $RepoToCheck) {
+        Write-Host "❌ El directorio no existe." -ForegroundColor Red
+        exit 1
+    }
+
+    $JobFile  = Join-Path $RepoToCheck ".ejercicio4.jobid"
     $StopFile = Join-Path $RepoToCheck ".stop_monitor"
-    
-    if (Test-Path $PidFile) {
-        $TargetPid = Get-Content $PidFile -ErrorAction SilentlyContinue
-        $null | Out-File $StopFile -Force
-        Write-Host "⏳ Deteniendo..." -ForegroundColor Cyan
+
+    if (-not (Test-Path $JobFile)) {
+        Write-Host "⚠ No se encontró daemon corriendo para este repo." -ForegroundColor Yellow
+        exit 0
+    }
+
+    $jobId = Get-Content $JobFile -ErrorAction SilentlyContinue
+    if (-not $jobId) {
+        Write-Host "⚠ Archivo de estado corrupto, limpiando." -ForegroundColor Yellow
+        Remove-Item $JobFile -Force -ErrorAction SilentlyContinue
+        if (Test-Path $StopFile) { Remove-Item $StopFile -Force -ErrorAction SilentlyContinue }
+        exit 0
+    }
+
+    $job = Get-Job -Id $jobId -ErrorAction SilentlyContinue
+
+    # Señal al job para que termine prolijo
+    $null | Out-File $StopFile -Force
+
+    if ($job) {
+        Write-Host "⏳ Deteniendo daemon (JobID: $jobId)..." -ForegroundColor Cyan
         Start-Sleep -Seconds 2
-        if (Get-Process -Id $TargetPid -ErrorAction SilentlyContinue) {
-            Stop-Process -Id $TargetPid -Force -ErrorAction SilentlyContinue
+
+        if ($job.State -notin 'Completed','Stopped') {
+            Stop-Job -Id $jobId -ErrorAction SilentlyContinue
         }
+
+        Remove-Job -Id $jobId -ErrorAction SilentlyContinue
         Write-Host "✓ Demonio detenido." -ForegroundColor Green
-        if (Test-Path $PidFile) { Remove-Item $PidFile -Force }
-        if (Test-Path $StopFile) { Remove-Item $StopFile -Force }
     } else {
-        Write-Host "⚠ No se encontró daemon corriendo." -ForegroundColor Yellow
+        Write-Host "⚠ Job no encontrado en esta sesión, limpiando archivos." -ForegroundColor Yellow
     }
+
+    if (Test-Path $JobFile)  { Remove-Item $JobFile -Force -ErrorAction SilentlyContinue }
+    if (Test-Path $StopFile) { Remove-Item $StopFile -Force -ErrorAction SilentlyContinue }
+
     exit 0
 }
 
-# ==========================================
-# MODO LANZADOR
-# ==========================================
-if (-not $DaemonMode) {
-    if (-not $Repo -or -not $Configuracion -or -not $Log) {
-        Write-Host "Uso: ./ejercicio4.ps1 -r <dir> -c <conf> -l <log>" -ForegroundColor Yellow; exit 1
-    }
-
-    if (-not (Test-Path $Repo)) { Write-Host "❌ Error: El repo '$Repo' no existe." -ForegroundColor Red; exit 1 }
-    if (-not (Test-Path $Configuracion)) { Write-Host "❌ Error: Config '$Configuracion' no existe." -ForegroundColor Red; exit 1 }
-
-    $RepoPath   = Get-AbsolutePath $Repo
-    $ConfigPath = Get-AbsolutePath $Configuracion
-    if (-not (Test-Path $Log)) { New-Item -Path $Log -ItemType File -Force | Out-Null }
-    $LogPath    = Get-AbsolutePath $Log
-    
-    $PidFile = Join-Path $RepoPath ".ejercicio4.pid"
-    $DebugFile = Join-Path $RepoPath "daemon_error.log"
-
-    if (Test-Path $PidFile) {
-        Write-Host "❌ Ya corre un daemon. Usa -k primero." -ForegroundColor Red; exit 1
-    }
-    if (Test-Path $DebugFile) { Remove-Item $DebugFile -Force }
-
-    Write-Host "🚀 Iniciando Demonio..." -ForegroundColor Cyan
-    
-    $scriptPath = $PSCommandPath
-    $IsLinuxEnv = $IsLinux -or ($PSVersionTable.OS -match 'Linux')
-
-    if ($IsLinuxEnv) {
-        $PwshCmd = (Get-Command pwsh).Source
-        if (-not $PwshCmd) { $PwshCmd = "pwsh" }
-        $cmd = "setsid nohup '$PwshCmd' -File '$scriptPath' -Repo '$RepoPath' -Configuracion '$ConfigPath' -Log '$LogPath' -DaemonMode > '$DebugFile' 2>&1 &"
-        bash -c $cmd
-    } else {
-        Start-Process -FilePath "pwsh" -ArgumentList "-File `"$scriptPath`" -Repo `"$RepoPath`" -Configuracion `"$ConfigPath`" -Log `"$LogPath`" -DaemonMode" -WindowStyle Hidden
-    }
-
-    Start-Sleep -Seconds 3
-
-    if (Test-Path $PidFile) {
-        $NewPid = Get-Content $PidFile
-        Write-Host "✓ Demonio iniciado (PID: $NewPid)" -ForegroundColor Green
-    } else {
-        Write-Host "❌ Error al iniciar." -ForegroundColor Red
-        if (Test-Path $DebugFile) { Get-Content $DebugFile | Write-Host -ForegroundColor Red }
-    }
-    exit 0
+# ================================
+# MODO LANZADOR (START)
+# ================================
+if (-not $Repo -or -not $Configuracion -or -not $Log) {
+    Write-Host "Uso: ./ejercicio4.ps1 -r <dir> -c <conf> -l <log>  |  ./ejercicio4.ps1 -k -r <dir>" -ForegroundColor Yellow
+    exit 1
 }
 
-# ==========================================
-# MODO DEMONIO
-# ==========================================
-if ($DaemonMode) {
-    $RepoPath   = $Repo
-    $ConfigPath = $Configuracion
-    $LogPath    = $Log
-    $PidFile    = Join-Path $RepoPath ".ejercicio4.pid"
-    $StopFile   = Join-Path $RepoPath ".stop_monitor"
+if (-not (Test-Path $Repo)) {
+    Write-Host "❌ Error: El directorio '$Repo' no existe." -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path $Configuracion)) {
+    Write-Host "❌ Error: Config '$Configuracion' no existe." -ForegroundColor Red
+    exit 1
+}
 
-    $PID | Out-File $PidFile -Force
+$RepoPath   = Get-AbsolutePath $Repo
+$ConfigPath = Get-AbsolutePath $Configuracion
 
-    $Global:MonitoredLogPath = $LogPath
-    $Global:MonitoredPatterns = @()
+if (-not (Test-Path $Log)) {
+    New-Item -Path $Log -ItemType File -Force | Out-Null
+}
+$LogPath = Get-AbsolutePath $Log
 
-    function Global:Write-Audit {
+$JobFile  = Join-Path $RepoPath ".ejercicio4.jobid"
+$StopFile = Join-Path $RepoPath ".stop_monitor"
+
+# Si ya hay un job registrado, verificamos que no siga vivo
+if (Test-Path $JobFile) {
+    $existingId = Get-Content $JobFile -ErrorAction SilentlyContinue
+    if ($existingId) {
+        $existingJob = Get-Job -Id $existingId -ErrorAction SilentlyContinue
+        if ($existingJob -and $existingJob.State -eq 'Running') {
+            Write-Host "❌ Ya corre un daemon para este repo (JobID: $existingId). Usa -k primero." -ForegroundColor Red
+            exit 1
+        }
+    }
+    Remove-Item $JobFile -Force -ErrorAction SilentlyContinue
+}
+
+if (Test-Path $StopFile) {
+    Remove-Item $StopFile -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host "🚀 Iniciando Demonio como Job de PowerShell..." -ForegroundColor Cyan
+
+# Demonio implementado como Job
+$job = Start-Job -ArgumentList $RepoPath, $ConfigPath, $LogPath -ScriptBlock {
+    param($RepoPath, $ConfigPath, $LogPath)
+
+    $PidFile  = Join-Path $RepoPath ".ejercicio4.jobid"
+    $StopFile = Join-Path $RepoPath ".stop_monitor"
+
+    # Variables de script (compartidas con el -Action)
+    $script:MonitoredLogPath  = $LogPath
+    $script:MonitoredPatterns = @()
+
+    function Write-Audit {
         param($Message)
         $Date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $Line = "[$Date] $Message"
 
-        # 1. Auto-reparación si el archivo no existe
-        if (-not (Test-Path $Global:MonitoredLogPath)) {
-             try { New-Item -Path $Global:MonitoredLogPath -ItemType File -Force | Out-Null } catch {}
+        if (-not (Test-Path $script:MonitoredLogPath)) {
+            try { New-Item -Path $script:MonitoredLogPath -ItemType File -Force | Out-Null } catch {}
         }
 
-        # 2. Escritura "No Bloqueante" (Shared Write)
         try {
-            # Abrimos el archivo permitiendo que otros procesos (como tu editor) lo lean al mismo tiempo
-            # FileMode.Append: Agrega al final
-            # FileAccess.Write: Nosotros queremos escribir
-            # FileShare.ReadWrite: ¡Permite que otros lean y escriban a la vez!
-            
             $FileStream = New-Object System.IO.FileStream(
-                $Global:MonitoredLogPath, 
-                [System.IO.FileMode]::Append, 
-                [System.IO.FileAccess]::Write, 
+                $script:MonitoredLogPath,
+                [System.IO.FileMode]::Append,
+                [System.IO.FileAccess]::Write,
                 [System.IO.FileShare]::ReadWrite
             )
-            
+
             $StreamWriter = New-Object System.IO.StreamWriter($FileStream, [System.Text.Encoding]::UTF8)
             $StreamWriter.WriteLine($Line)
-            
-            # Es importante cerrar el stream rápido para liberar recursos
             $StreamWriter.Close()
             $FileStream.Close()
-
         } catch {
-            # Si falla (ej: bloqueo exclusivo total), intentamos el método viejo como respaldo
-            try { $Line | Out-File -FilePath $Global:MonitoredLogPath -Append -Encoding utf8 -ErrorAction Stop } catch {}
+            try { $Line | Out-File -FilePath $script:MonitoredLogPath -Append -Encoding utf8 -ErrorAction Stop } catch {}
         }
     }
 
-    Write-Audit "DAEMON INICIADO (PID: $PID)"
+    Write-Audit "DAEMON INICIADO (Job en proceso PID: $PID)"
+    Write-Audit "DEBUG: RepoPath monitoreado = '$RepoPath'"
 
     try {
         if (-not (Test-Path $ConfigPath)) { throw "Config not found" }
-        
+
         $rawPatterns = Get-Content $ConfigPath
-        $Global:MonitoredPatterns = $rawPatterns | Where-Object { $_ -notmatch '^\s*#' -and $_ -match '\S' }
-        
+        $script:MonitoredPatterns = $rawPatterns | Where-Object {
+            $_ -notmatch '^\s*#' -and $_ -match '\S'
+        }
+
         $actionBlock = {
-            $evPath = $Event.SourceEventArgs.FullPath
-            $evName = $Event.SourceEventArgs.Name
-            
-            if ($evPath -eq $Global:MonitoredLogPath -or $evName -match "^\.") { return }
-            
-            # OPTIMIZACIÓN: Bajamos de 500ms a 100ms para que sea más rápido
-            Start-Sleep -Milliseconds 100 
-            
+            param($sender, $eventArgs)
+
+            $evPath = $eventArgs.FullPath
+            $evName = $eventArgs.Name
+            $evType = $eventArgs.ChangeType
+
+            Write-Audit "DEBUG: Evento '$evType' sobre '$evPath'"
+
+            if ($evPath -eq $script:MonitoredLogPath -or $evName -match "^\.") {
+                Write-Audit "DEBUG: Ignorado (log o archivo oculto): '$evName'"
+                return
+            }
+
+            Start-Sleep -Milliseconds 100
+
             if (Test-Path $evPath -PathType Leaf) {
                 try {
                     $content = Get-Content $evPath -Raw -ErrorAction Stop
-                    
-                    foreach ($p in $Global:MonitoredPatterns) {
+
+                    foreach ($p in $script:MonitoredPatterns) {
                         $isMatch = $false
-                        
-                        # Guardamos el patrón original para mostrarlo en el log
-                        $patronEncontrado = $p 
-                        
+                        $patronEncontrado = $p
+
                         if ($p -match "^regex:(.+)") {
-                            if ($content -match $matches[1]) { 
+                            if ($content -match $matches[1]) {
                                 $isMatch = $true
-                                # Aclaramos en el log que fue por Regex
-                                $patronEncontrado = " '$p (REGEX)' " 
+                                $patronEncontrado = "'$p' (REGEX)"
                             }
                         } else {
-                            if ($content -match [regex]::Escape($p)) { 
+                            if ($content -match [regex]::Escape($p)) {
                                 $isMatch = $true
-                                # Aclaramos en el log que fue Texto
-                                $patronEncontrado = "'$p' (TEXTO)" 
+                                $patronEncontrado = "'$p' (TEXTO)"
                             }
                         }
 
                         if ($isMatch) {
-                            # AHORA SÍ: Muestra el patrón real
                             Write-Audit "ALERTA: Se detectó patrón $patronEncontrado en el archivo '$evName'"
                             break
                         }
                     }
-                } catch { Write-Audit "ERROR leyendo ${evName}: $_" }
+                } catch {
+                    Write-Audit "ERROR leyendo ${evName}: $_"
+                }
+            } else {
+                Write-Audit "DEBUG: El path reportado por el evento no es un archivo: '$evPath'"
             }
         }
 
         $watcher = New-Object System.IO.FileSystemWatcher
         $watcher.Path = $RepoPath
         $watcher.IncludeSubdirectories = $true
+        $watcher.Filter = "*.*"
+        $watcher.NotifyFilter = [IO.NotifyFilters]'FileName, LastWrite'
         $watcher.EnableRaisingEvents = $true
-        
+
         Register-ObjectEvent -InputObject $watcher -EventName "Created" -Action $actionBlock | Out-Null
         Register-ObjectEvent -InputObject $watcher -EventName "Changed" -Action $actionBlock | Out-Null
-        
-        while (-not (Test-Path $StopFile)) { Start-Sleep -Seconds 2 }
+
+        while (-not (Test-Path $StopFile)) {
+            Start-Sleep -Seconds 2
+        }
 
     } catch {
         Write-Audit "CRASH: $_"
     } finally {
-        $watcher.EnableRaisingEvents = $false
-        Get-EventSubscriber | Unregister-Event -Force
-        if ($watcher) { $watcher.Dispose() }
-        if (Test-Path $PidFile) { Remove-Item $PidFile -Force -ErrorAction SilentlyContinue }
+        if ($watcher) {
+            $watcher.EnableRaisingEvents = $false
+            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $watcher } | Unregister-Event -Force
+            $watcher.Dispose()
+        }
+        if (Test-Path $PidFile)  { Remove-Item $PidFile -Force -ErrorAction SilentlyContinue }
         if (Test-Path $StopFile) { Remove-Item $StopFile -Force -ErrorAction SilentlyContinue }
         Write-Audit "DAEMON DETENIDO"
     }
 }
+
+$job.Id | Out-File $JobFile -Force
+
+Write-Host "✓ Demonio iniciado como Job (ID: $($job.Id))" -ForegroundColor Green
+exit 0
