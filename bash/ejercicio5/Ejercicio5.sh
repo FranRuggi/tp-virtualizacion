@@ -7,7 +7,7 @@
 #   *RUGGIERO, ZOIS
 
 PAISES=()
-rutaBaseCache="./" #Aca debe ir "/tmp" por criterio de correcion
+rutaBaseCache="/tmp" 
 ttlActual=-1
 
 function ayuda() {
