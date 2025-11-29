@@ -213,11 +213,11 @@ $job = Start-Job -ArgumentList $RepoPath, $ConfigPath, $LogPath -ScriptBlock {
         }
 
         $actionBlock = {
-            param($sender, $eventArgs)
+            param($senders, $eventArgss)
 
-            $evPath = $eventArgs.FullPath
-            $evName = $eventArgs.Name
-            $evType = $eventArgs.ChangeType
+            $evPath = $eventArgss.FullPath
+            $evName = $eventArgss.Name
+            $evType = $eventArgss.ChangeType
 
             Write-Audit "DEBUG: Evento '$evType' sobre '$evPath'"
 
